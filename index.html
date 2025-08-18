@@ -30,8 +30,8 @@
                     <div class="auth-header">
                         <div class="auth-logo">💼</div>
                         <h1>CashBook Pro</h1>
-                        <p>Money Changer Management System</p>
-                        <div class="status-badge success">In-Memory MongoDB Active</div>
+                        <p>Multi-Currency Money Changer Management System</p>
+                        <div class="status-badge success">Enhanced MongoDB Simulation Active</div>
                     </div>
                     
                     <form id="login-form" class="auth-form">
@@ -120,7 +120,6 @@
                         <div class="auth-logo">🔐</div>
                         <h1>Reset Password</h1>
                         <p>Enter your email to receive a reset code</p>
-                        <div class="status-badge info">Email Reset Available</div>
                     </div>
                     
                     <form id="forgot-password-form" class="auth-form">
@@ -151,8 +150,8 @@
                     
                     <form id="reset-password-form" class="auth-form">
                         <div class="form-group">
-                            <label for="reset-code">Verification Code</label>
-                            <input type="text" id="reset-code" name="code" required maxlength="6" pattern="[0-9]{6}">
+                            <label for="reset-code">Reset Code</label>
+                            <input type="text" id="reset-code" name="code" required maxlength="6">
                         </div>
                         
                         <div class="form-group">
@@ -161,7 +160,7 @@
                         </div>
                         
                         <div class="form-group">
-                            <label for="confirm-new-password">Confirm Password</label>
+                            <label for="confirm-new-password">Confirm New Password</label>
                             <input type="password" id="confirm-new-password" name="confirmPassword" required minlength="6">
                         </div>
                         
@@ -179,72 +178,40 @@
         <div id="payment-page" class="page hidden">
             <div class="container">
                 <div class="payment-container">
-                    <div class="payment-header">
-                        <div class="payment-icon">💳</div>
-                        <h1>Complete Your Payment</h1>
-                        <p>Account Status: <span id="account-status-badge" class="status-badge"></span></p>
-                    </div>
-                    
-                    <div class="payment-content">
-                        <div class="warning-banner">
-                            <div class="warning-icon">⚠️</div>
-                            <div>
-                                <h3>IMPORTANT PAYMENT INSTRUCTIONS</h3>
-                                <p>DO NOT send money directly to the Mobile Money number below. Contact us on WhatsApp first to verify your payment details.</p>
-                            </div>
+                    <div class="payment-card">
+                        <div class="payment-header">
+                            <h1>Complete Your Subscription</h1>
+                            <p>Activate your CashBook Pro account</p>
+                            <span id="account-status-badge" class="status-badge pending">Pending Payment</span>
                         </div>
                         
-                        <div class="payment-details">
-                            <div class="subscription-details">
-                                <h3>Subscription Details</h3>
-                                <div class="price-breakdown">
-                                    <div class="price-item">
-                                        <span>Monthly Subscription</span>
-                                        <span>$25.00</span>
-                                    </div>
-                                    <div class="price-item">
-                                        <span>Duration</span>
-                                        <span>30 Days</span>
-                                    </div>
-                                    <div class="price-total">
-                                        <span>Total Amount</span>
-                                        <span>$25.00</span>
-                                    </div>
+                        <div class="payment-content">
+                            <div class="payment-plan">
+                                <h2>Monthly Subscription</h2>
+                                <div class="price">$29.99/month</div>
+                                <div class="features">
+                                    <div class="feature">✓ Multi-currency support</div>
+                                    <div class="feature">✓ Unlimited transactions</div>
+                                    <div class="feature">✓ Real-time exchange rates</div>
+                                    <div class="feature">✓ PDF/Excel reports</div>
+                                    <div class="feature">✓ 24/7 customer support</div>
                                 </div>
                             </div>
                             
                             <div class="payment-instructions">
                                 <h3>Payment Instructions</h3>
-                                <div class="contact-info">
-                                    <div class="contact-item">
-                                        <span>Mobile Money Number</span>
-                                        <strong>+256 700 123 456</strong>
-                                    </div>
-                                    <div class="contact-item">
-                                        <span>WhatsApp Contact</span>
-                                        <strong>+256 700 123 456</strong>
-                                    </div>
+                                <p>Send payment via WhatsApp to:</p>
+                                <div class="whatsapp-number">
+                                    <strong>+256 700 123 456</strong>
+                                    <button class="btn-copy" onclick="app.copyToClipboard('+256700123456')">Copy</button>
                                 </div>
+                                <p>Include your email address in the payment message for verification.</p>
+                                <p>Your account will be activated within 24 hours of payment confirmation.</p>
                             </div>
-                        </div>
-                        
-                        <div class="payment-process">
-                            <h4>Payment Process:</h4>
-                            <ol>
-                                <li>Contact us on WhatsApp: <strong>+256 700 123 456</strong></li>
-                                <li>Provide your account details</li>
-                                <li>Get payment verification and instructions</li>
-                                <li>Complete payment via Mobile Money</li>
-                                <li>Send confirmation on WhatsApp</li>
-                                <li>Account activated within 1-2 hours</li>
-                            </ol>
-                        </div>
-                        
-                        <div class="payment-actions">
-                            <a href="https://wa.me/256700123456" target="_blank" class="btn-whatsapp">
-                                📱 Contact WhatsApp
-                            </a>
-                            <button id="back-to-dashboard" class="btn-secondary">← Back to Dashboard</button>
+                            
+                            <div class="payment-actions">
+                                <button id="back-to-dashboard" class="btn-secondary">Return to Dashboard</button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -256,90 +223,73 @@
             <div class="container">
                 <div class="dashboard-header">
                     <h1>Owner Dashboard</h1>
-                    <p>System administration and client management</p>
+                    <p>Manage clients and monitor system performance</p>
                 </div>
                 
                 <div class="stats-grid">
                     <div class="stat-card">
                         <div class="stat-icon">👥</div>
                         <div class="stat-content">
-                            <div class="stat-label">Total Clients</div>
                             <div class="stat-value" id="total-clients">0</div>
+                            <div class="stat-label">Total Clients</div>
                         </div>
                     </div>
                     
                     <div class="stat-card">
                         <div class="stat-icon">✅</div>
                         <div class="stat-content">
-                            <div class="stat-label">Active Clients</div>
                             <div class="stat-value" id="active-clients">0</div>
+                            <div class="stat-label">Active Clients</div>
                         </div>
                     </div>
                     
                     <div class="stat-card">
-                        <div class="stat-icon">⏰</div>
+                        <div class="stat-icon">⏳</div>
                         <div class="stat-content">
-                            <div class="stat-label">Pending Payments</div>
                             <div class="stat-value" id="pending-payments">0</div>
+                            <div class="stat-label">Pending Payments</div>
                         </div>
                     </div>
                     
                     <div class="stat-card">
                         <div class="stat-icon">💰</div>
                         <div class="stat-content">
-                            <div class="stat-label">Monthly Revenue</div>
                             <div class="stat-value" id="monthly-revenue">$0</div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Backend Status -->
-                <div class="backend-status">
-                    <h3>In-Memory MongoDB Status</h3>
-                    <div class="status-indicators">
-                        <div class="status-item">
-                            <span class="status-dot success"></span>
-                            <span>MongoDB Simulation Active</span>
-                        </div>
-                        <div class="status-item">
-                            <span class="status-dot success"></span>
-                            <span>Express Server Running</span>
-                        </div>
-                        <div class="status-item">
-                            <span class="status-dot success"></span>
-                            <span>All APIs Functional</span>
+                            <div class="stat-label">Monthly Revenue</div>
                         </div>
                     </div>
                 </div>
                 
-                <div class="section-header">
-                    <h2>Client Management</h2>
-                    <div class="filters">
-                        <input type="text" id="search-clients" placeholder="Search clients...">
-                        <select id="status-filter">
-                            <option value="">All Status</option>
-                            <option value="active">Active</option>
-                            <option value="pending">Pending</option>
-                            <option value="inactive">Inactive</option>
-                        </select>
+                <div class="clients-section">
+                    <div class="section-header">
+                        <h2>Client Management</h2>
+                        <div class="section-actions">
+                            <input type="text" id="search-clients" placeholder="Search clients..." class="search-input">
+                            <select id="status-filter" class="filter-select">
+                                <option value="">All Status</option>
+                                <option value="active">Active</option>
+                                <option value="pending">Pending</option>
+                                <option value="suspended">Suspended</option>
+                            </select>
+                        </div>
                     </div>
-                </div>
-                
-                <div class="clients-table">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Client</th>
-                                <th>Status</th>
-                                <th>Subscription</th>
-                                <th>Last Payment</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody id="clients-tbody">
-                            <!-- Clients will be loaded here -->
-                        </tbody>
-                    </table>
+                    
+                    <div class="table-container">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Client</th>
+                                    <th>Status</th>
+                                    <th>Subscription</th>
+                                    <th>Last Payment</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="clients-tbody">
+                                <!-- Client rows will be populated here -->
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
         </div>
@@ -349,92 +299,121 @@
             <div class="container">
                 <div class="dashboard-header">
                     <h1>Client Dashboard</h1>
-                    <p>Manage your money exchange transactions</p>
-                </div>
-
-                <!-- Account Status -->
-                <div class="account-status">
-                    <h3>Account Status</h3>
-                    <div class="status-grid">
-                        <div class="status-item">
-                            <span>Current Status</span>
-                            <span id="current-status" class="status-badge">Active</span>
-                        </div>
-                        <div class="status-item">
-                            <span>Subscription Expires</span>
-                            <span id="subscription-end">N/A</span>
-                        </div>
-                        <div class="status-item">
-                            <span>Days Remaining</span>
-                            <span id="days-remaining">N/A</span>
-                        </div>
+                    <p>Manage your money exchange operations</p>
+                    <div class="account-info">
+                        <span>Status: <span id="current-status" class="status-badge">Active</span></span>
+                        <span>Expires: <span id="subscription-end">N/A</span></span>
+                        <span>Remaining: <span id="days-remaining">N/A</span></span>
                     </div>
                 </div>
                 
-                <div class="stats-grid">
-                    <div class="stat-card">
-                        <div class="stat-icon">📈</div>
-                        <div class="stat-content">
-                            <div class="stat-label">Today's Profit</div>
-                            <div class="stat-value" id="today-profit">$0.00</div>
+                <div class="dashboard-grid">
+                    <!-- Today's Profit Panel -->
+                    <div class="dashboard-card">
+                        <div class="card-header">
+                            <h3>Today's Profit</h3>
+                            <button id="reset-profit-btn" class="btn-action btn-reset">Reset</button>
+                        </div>
+                        <div class="card-content">
+                            <div class="profit-amount" id="today-profit">$0.00</div>
+                            <div class="profit-transactions">
+                                <span id="transaction-count">0</span> transactions today
+                            </div>
                         </div>
                     </div>
                     
-                    <div class="stat-card">
-                        <div class="stat-icon">💵</div>
-                        <div class="stat-content">
-                            <div class="stat-label">USD Balance</div>
-                            <div class="stat-value" id="usd-balance">$0.00</div>
+                    <!-- Multi-Currency Balance Panel -->
+                    <div class="dashboard-card">
+                        <div class="card-header">
+                            <h3>Currency Balances</h3>
+                            <button id="add-currency-btn" class="btn-action btn-add">Add Currency</button>
+                        </div>
+                        <div class="card-content">
+                            <div id="currency-balances" class="currency-grid">
+                                <!-- Currency balances will be populated here -->
+                            </div>
                         </div>
                     </div>
                     
-                    <div class="stat-card">
-                        <div class="stat-icon">💸</div>
-                        <div class="stat-content">
-                            <div class="stat-label">UGX Balance</div>
-                            <div class="stat-value" id="ugx-balance">UGX 0</div>
+                    <!-- Exchange Operations -->
+                    <div class="dashboard-card">
+                        <div class="card-header">
+                            <h3>Exchange Operations</h3>
+                            <button id="add-transaction-btn" class="btn-action btn-primary">New Exchange</button>
+                        </div>
+                        <div class="card-content">
+                            <div class="exchange-calculator">
+                                <div class="calc-row">
+                                    <select id="from-currency" class="currency-select">
+                                        <option value="USD">USD - US Dollar</option>
+                                        <option value="EUR">EUR - Euro</option>
+                                        <option value="GBP">GBP - British Pound</option>
+                                        <option value="UGX">UGX - Ugandan Shilling</option>
+                                        <option value="SOS">SOS - Somali Shilling</option>
+                                        <option value="KES">KES - Kenyan Shilling</option>
+                                        <option value="ETB">ETB - Ethiopian Birr</option>
+                                        <option value="DJF">DJF - Djibouti Franc</option>
+                                        <option value="ERN">ERN - Eritrean Nakfa</option>
+                                        <option value="SDG">SDG - Sudanese Pound</option>
+                                    </select>
+                                    <input type="number" id="from-amount" placeholder="0.00" step="0.01">
+                                </div>
+                                <div class="calc-arrow">⇄</div>
+                                <div class="calc-row">
+                                    <select id="to-currency" class="currency-select">
+                                        <option value="UGX">UGX - Ugandan Shilling</option>
+                                        <option value="USD">USD - US Dollar</option>
+                                        <option value="EUR">EUR - Euro</option>
+                                        <option value="GBP">GBP - British Pound</option>
+                                        <option value="SOS">SOS - Somali Shilling</option>
+                                        <option value="KES">KES - Kenyan Shilling</option>
+                                        <option value="ETB">ETB - Ethiopian Birr</option>
+                                        <option value="DJF">DJF - Djibouti Franc</option>
+                                        <option value="ERN">ERN - Eritrean Nakfa</option>
+                                        <option value="SDG">SDG - Sudanese Pound</option>
+                                    </select>
+                                    <input type="number" id="to-amount" placeholder="0.00" step="0.01" readonly>
+                                </div>
+                                <div class="calc-info">
+                                    <div>Rate: <span id="current-rate">0.00</span></div>
+                                    <div>Profit: <span id="calculated-profit">$0.00</span></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Transactions Section -->
+                <div class="transactions-section">
+                    <div class="section-header">
+                        <h2>Transaction History</h2>
+                        <div class="section-actions">
+                            <button id="generate-report-btn" class="btn-action btn-secondary">Generate Report</button>
+                            <input type="text" id="search-transactions" placeholder="Search transactions..." class="search-input">
+                            <input type="date" id="date-filter" class="date-filter">
                         </div>
                     </div>
                     
-                    <div class="stat-card">
-                        <div class="stat-icon">🔢</div>
-                        <div class="stat-content">
-                            <div class="stat-label">Transaction Count</div>
-                            <div class="stat-value" id="transaction-count">0</div>
-                        </div>
+                    <div class="table-container">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Date & Time</th>
+                                    <th>Customer</th>
+                                    <th>Type</th>
+                                    <th>From Amount</th>
+                                    <th>Rate</th>
+                                    <th>To Amount</th>
+                                    <th>Profit</th>
+                                    <th>Notes</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="transactions-tbody">
+                                <!-- Transaction rows will be populated here -->
+                            </tbody>
+                        </table>
                     </div>
-                </div>
-                
-                <div class="section-header">
-                    <h2>Quick Actions</h2>
-                    <div class="quick-actions">
-                        <button id="add-transaction-btn" class="btn-primary">Add Transaction</button>
-                        <button id="update-balance-btn" class="btn-secondary">Update Balance</button>
-                    </div>
-                </div>
-                
-                <div class="section-header">
-                    <h2>Recent Transactions</h2>
-                </div>
-                
-                <div class="transactions-table">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Date</th>
-                                <th>Customer</th>
-                                <th>Type</th>
-                                <th>Amount</th>
-                                <th>Rate</th>
-                                <th>Converted</th>
-                                <th>Profit</th>
-                                <th>Notes</th>
-                            </tr>
-                        </thead>
-                        <tbody id="transactions-tbody">
-                            <!-- Transactions will be loaded here -->
-                        </tbody>
-                    </table>
                 </div>
             </div>
         </div>
@@ -444,10 +423,11 @@
             <div class="modal-overlay"></div>
             <div class="modal-content">
                 <div class="modal-header">
-                    <h3>Admin Settings</h3>
-                    <button id="close-admin-settings" class="close-btn">&times;</button>
+                    <h2>Admin Settings</h2>
+                    <button id="close-admin-settings" class="modal-close">&times;</button>
                 </div>
-                <form id="admin-settings-form">
+                
+                <form id="admin-settings-form" class="modal-form">
                     <div class="form-group">
                         <label for="admin-username">Username</label>
                         <input type="text" id="admin-username" name="username" required>
@@ -474,8 +454,8 @@
                     </div>
                     
                     <div class="modal-actions">
-                        <button type="submit" class="btn-primary">Update Settings</button>
                         <button type="button" id="cancel-admin-settings" class="btn-secondary">Cancel</button>
+                        <button type="submit" class="btn-primary">Update Settings</button>
                     </div>
                 </form>
             </div>
@@ -486,69 +466,264 @@
             <div class="modal-overlay"></div>
             <div class="modal-content">
                 <div class="modal-header">
-                    <h3>Add New Transaction</h3>
-                    <button id="close-add-transaction" class="close-btn">&times;</button>
+                    <h2>New Exchange Transaction</h2>
+                    <button id="close-add-transaction" class="modal-close">&times;</button>
                 </div>
-                <form id="add-transaction-form">
+                
+                <form id="add-transaction-form" class="modal-form">
                     <div class="form-group">
                         <label for="customer-name">Customer Name</label>
                         <input type="text" id="customer-name" name="customerName" required>
                     </div>
                     
-                    <div class="form-group">
-                        <label for="transaction-type">Transaction Type</label>
-                        <select id="transaction-type" name="transactionType" required>
-                            <option value="">Select type</option>
-                            <option value="usd_to_ugx">USD to UGX</option>
-                            <option value="ugx_to_usd">UGX to USD</option>
-                        </select>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="from-currency-tx">From Currency</label>
+                            <select id="from-currency-tx" name="fromCurrency" required>
+                                <option value="USD">USD - US Dollar</option>
+                                <option value="EUR">EUR - Euro</option>
+                                <option value="GBP">GBP - British Pound</option>
+                                <option value="UGX">UGX - Ugandan Shilling</option>
+                                <option value="SOS">SOS - Somali Shilling</option>
+                                <option value="KES">KES - Kenyan Shilling</option>
+                                <option value="ETB">ETB - Ethiopian Birr</option>
+                                <option value="DJF">DJF - Djibouti Franc</option>
+                                <option value="ERN">ERN - Eritrean Nakfa</option>
+                                <option value="SDG">SDG - Sudanese Pound</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="to-currency-tx">To Currency</label>
+                            <select id="to-currency-tx" name="toCurrency" required>
+                                <option value="UGX">UGX - Ugandan Shilling</option>
+                                <option value="USD">USD - US Dollar</option>
+                                <option value="EUR">EUR - Euro</option>
+                                <option value="GBP">GBP - British Pound</option>
+                                <option value="SOS">SOS - Somali Shilling</option>
+                                <option value="KES">KES - Kenyan Shilling</option>
+                                <option value="ETB">ETB - Ethiopian Birr</option>
+                                <option value="DJF">DJF - Djibouti Franc</option>
+                                <option value="ERN">ERN - Eritrean Nakfa</option>
+                                <option value="SDG">SDG - Sudanese Pound</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="from-amount-tx">From Amount</label>
+                            <input type="number" id="from-amount-tx" name="fromAmount" step="0.01" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="exchange-rate-tx">Exchange Rate</label>
+                            <input type="number" id="exchange-rate-tx" name="exchangeRate" step="0.0001" required>
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="to-amount-tx">To Amount</label>
+                            <input type="number" id="to-amount-tx" name="toAmount" step="0.01" readonly>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="profit-margin-tx">Profit Margin (%)</label>
+                            <input type="number" id="profit-margin-tx" name="profitMargin" step="0.01" value="2.00" required>
+                        </div>
                     </div>
                     
                     <div class="form-group">
-                        <label for="amount">Amount</label>
-                        <input type="number" id="amount" name="amount" step="0.01" required>
+                        <label for="notes-tx">Notes (optional)</label>
+                        <textarea id="notes-tx" name="notes" rows="3"></textarea>
                     </div>
                     
-                    <div class="form-group">
-                        <label for="exchange-rate">Exchange Rate</label>
-                        <input type="number" id="exchange-rate" name="exchangeRate" step="0.01" required>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="notes">Notes (optional)</label>
-                        <textarea id="notes" name="notes" rows="3"></textarea>
+                    <div class="transaction-summary">
+                        <div class="summary-row">
+                            <span>Expected Profit:</span>
+                            <span id="expected-profit-tx">$0.00</span>
+                        </div>
                     </div>
                     
                     <div class="modal-actions">
-                        <button type="submit" class="btn-primary">Add Transaction</button>
                         <button type="button" id="cancel-add-transaction" class="btn-secondary">Cancel</button>
+                        <button type="submit" class="btn-primary">Add Transaction</button>
                     </div>
                 </form>
             </div>
         </div>
 
-        <!-- Update Balance Modal -->
-        <div id="update-balance-modal" class="modal hidden">
+        <!-- Edit Transaction Modal -->
+        <div id="edit-transaction-modal" class="modal hidden">
             <div class="modal-overlay"></div>
             <div class="modal-content">
                 <div class="modal-header">
-                    <h3>Update Balance</h3>
-                    <button id="close-update-balance" class="close-btn">&times;</button>
+                    <h2>Edit Transaction</h2>
+                    <button id="close-edit-transaction" class="modal-close">&times;</button>
                 </div>
-                <form id="update-balance-form">
+                
+                <form id="edit-transaction-form" class="modal-form">
+                    <input type="hidden" id="edit-transaction-id">
+                    
                     <div class="form-group">
-                        <label for="usd-balance-input">USD Balance</label>
-                        <input type="number" id="usd-balance-input" name="usdBalance" step="0.01" required>
+                        <label for="edit-customer-name">Customer Name</label>
+                        <input type="text" id="edit-customer-name" name="customerName" required>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="edit-from-currency">From Currency</label>
+                            <select id="edit-from-currency" name="fromCurrency" required>
+                                <option value="USD">USD - US Dollar</option>
+                                <option value="EUR">EUR - Euro</option>
+                                <option value="GBP">GBP - British Pound</option>
+                                <option value="UGX">UGX - Ugandan Shilling</option>
+                                <option value="SOS">SOS - Somali Shilling</option>
+                                <option value="KES">KES - Kenyan Shilling</option>
+                                <option value="ETB">ETB - Ethiopian Birr</option>
+                                <option value="DJF">DJF - Djibouti Franc</option>
+                                <option value="ERN">ERN - Eritrean Nakfa</option>
+                                <option value="SDG">SDG - Sudanese Pound</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="edit-to-currency">To Currency</label>
+                            <select id="edit-to-currency" name="toCurrency" required>
+                                <option value="UGX">UGX - Ugandan Shilling</option>
+                                <option value="USD">USD - US Dollar</option>
+                                <option value="EUR">EUR - Euro</option>
+                                <option value="GBP">GBP - British Pound</option>
+                                <option value="SOS">SOS - Somali Shilling</option>
+                                <option value="KES">KES - Kenyan Shilling</option>
+                                <option value="ETB">ETB - Ethiopian Birr</option>
+                                <option value="DJF">DJF - Djibouti Franc</option>
+                                <option value="ERN">ERN - Eritrean Nakfa</option>
+                                <option value="SDG">SDG - Sudanese Pound</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="edit-from-amount">From Amount</label>
+                            <input type="number" id="edit-from-amount" name="fromAmount" step="0.01" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="edit-exchange-rate">Exchange Rate</label>
+                            <input type="number" id="edit-exchange-rate" name="exchangeRate" step="0.0001" required>
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="edit-to-amount">To Amount</label>
+                            <input type="number" id="edit-to-amount" name="toAmount" step="0.01" readonly>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="edit-profit-margin">Profit Margin (%)</label>
+                            <input type="number" id="edit-profit-margin" name="profitMargin" step="0.01" required>
+                        </div>
                     </div>
                     
                     <div class="form-group">
-                        <label for="ugx-balance-input">UGX Balance</label>
-                        <input type="number" id="ugx-balance-input" name="ugxBalance" step="0.01" required>
+                        <label for="edit-notes">Notes (optional)</label>
+                        <textarea id="edit-notes" name="notes" rows="3"></textarea>
                     </div>
                     
                     <div class="modal-actions">
-                        <button type="submit" class="btn-primary">Update Balance</button>
-                        <button type="button" id="cancel-update-balance" class="btn-secondary">Cancel</button>
+                        <button type="button" id="cancel-edit-transaction" class="btn-secondary">Cancel</button>
+                        <button type="submit" class="btn-primary">Update Transaction</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Add Currency Modal -->
+        <div id="add-currency-modal" class="modal hidden">
+            <div class="modal-overlay"></div>
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>Add Currency Balance</h2>
+                    <button id="close-add-currency" class="modal-close">&times;</button>
+                </div>
+                
+                <form id="add-currency-form" class="modal-form">
+                    <div class="form-group">
+                        <label for="currency-select">Currency</label>
+                        <select id="currency-select" name="currency" required>
+                            <option value="">Select Currency</option>
+                            <option value="USD">USD - US Dollar</option>
+                            <option value="EUR">EUR - Euro</option>
+                            <option value="GBP">GBP - British Pound</option>
+                            <option value="UGX">UGX - Ugandan Shilling</option>
+                            <option value="SOS">SOS - Somali Shilling</option>
+                            <option value="KES">KES - Kenyan Shilling</option>
+                            <option value="ETB">ETB - Ethiopian Birr</option>
+                            <option value="DJF">DJF - Djibouti Franc</option>
+                            <option value="ERN">ERN - Eritrean Nakfa</option>
+                            <option value="SDG">SDG - Sudanese Pound</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="currency-amount">Amount</label>
+                        <input type="number" id="currency-amount" name="amount" step="0.01" required>
+                    </div>
+                    
+                    <div class="modal-actions">
+                        <button type="button" id="cancel-add-currency" class="btn-secondary">Cancel</button>
+                        <button type="submit" class="btn-primary">Add Currency</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Generate Report Modal -->
+        <div id="generate-report-modal" class="modal hidden">
+            <div class="modal-overlay"></div>
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>Generate Report</h2>
+                    <button id="close-generate-report" class="modal-close">&times;</button>
+                </div>
+                
+                <form id="generate-report-form" class="modal-form">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="report-start-date">Start Date</label>
+                            <input type="date" id="report-start-date" name="startDate" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="report-end-date">End Date</label>
+                            <input type="date" id="report-end-date" name="endDate" required>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="report-format">Report Format</label>
+                        <select id="report-format" name="format" required>
+                            <option value="pdf">PDF Report</option>
+                            <option value="excel">Excel Spreadsheet</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Include Filters</label>
+                        <div class="checkbox-group">
+                            <label><input type="checkbox" id="include-profit" checked> Profit Analysis</label>
+                            <label><input type="checkbox" id="include-currency" checked> Currency Breakdown</label>
+                            <label><input type="checkbox" id="include-customers" checked> Customer Details</label>
+                        </div>
+                    </div>
+                    
+                    <div class="modal-actions">
+                        <button type="button" id="cancel-generate-report" class="btn-secondary">Cancel</button>
+                        <button type="submit" class="btn-primary">Generate Report</button>
                     </div>
                 </form>
             </div>
@@ -556,12 +731,14 @@
 
         <!-- Loading Overlay -->
         <div id="loading-overlay" class="loading-overlay hidden">
-            <div class="loading-spinner"></div>
-            <p>Loading...</p>
+            <div class="loading-spinner">
+                <div class="spinner"></div>
+                <div class="loading-text">Processing...</div>
+            </div>
         </div>
 
         <!-- Toast Container -->
-        <div id="toast-container"></div>
+        <div id="toast-container" class="toast-container"></div>
     </div>
 
     <script src="app.js"></script>

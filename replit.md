@@ -68,10 +68,23 @@ No TypeScript or additional frameworks - pure vanilla JavaScript only.
 - **Owner Account**: username=admin, password=admin123
 - **Client Account**: username=democlient, password=client123
 
-### Key Features
+### Enhanced Multi-Currency Features
+- **Comprehensive Currency Support**: USD, EUR, GBP, UGX, SOS, KES, ETB, DJF, ERN, SDG with realistic exchange rates
+- **Transaction Editing**: Full CRUD operations with datetime tracking (year/month/day/hour/minute/second)
+- **Advanced Exchange Calculator**: Real-time calculations with configurable profit margins
+- **Currency Balance Management**: Controlled addition and management of money per currency
+- **Today's Profit Tracking**: Accurate USD-based profit calculation with reset functionality
+- **Enhanced Reporting**: PDF/Excel report generation with custom date ranges and filters
+- **Smart Exchange Rates**: Realistic rates with automatic profit margin calculation
+- **Multi-Currency Balances**: Support for managing balances across all supported currencies
+- **Enhanced Transaction History**: Complete audit trail with full datetime stamps
+- **Professional Exchange Operations**: Realistic business workflow for money changing operations
+
+### Core Features
 - User registration with payment workflow
-- Owner dashboard with client management
-- Client dashboard with transaction tracking
-- JWT authentication system
-- In-memory data storage (simulates MongoDB)
-- Responsive design for all screen sizes
+- Owner dashboard with client management  
+- Client dashboard with multi-currency transaction tracking
+- JWT authentication system with 7-day token expiration
+- Enhanced in-memory data storage simulating MongoDB functionality
+- Responsive design for all screen sizes and devices
+- Real-time exchange rate calculations with profit tracking

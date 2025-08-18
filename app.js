@@ -1,15 +1,53 @@
-// CashBook Pro - Vanilla JavaScript Frontend
+// CashBook Pro - Enhanced Multi-Currency Vanilla JavaScript Frontend
 
 class CashBookApp {
     constructor() {
         this.currentUser = null;
         this.API_BASE = 'http://localhost:5000';
+        this.currencies = this.initializeCurrencies();
+        this.exchangeRates = {};
+        this.editingTransaction = null;
         this.init();
     }
 
     init() {
+        this.loadExchangeRates();
         this.setupEventListeners();
         this.checkAuthentication();
+    }
+
+    // Initialize supported currencies with realistic exchange rates
+    initializeCurrencies() {
+        return {
+            'USD': { name: 'US Dollar', symbol: '$', baseRate: 1.0000 },
+            'EUR': { name: 'Euro', symbol: '€', baseRate: 0.8500 },
+            'GBP': { name: 'British Pound', symbol: '£', baseRate: 0.7800 },
+            'UGX': { name: 'Ugandan Shilling', symbol: 'USh', baseRate: 3750.0000 },
+            'SOS': { name: 'Somali Shilling', symbol: 'S', baseRate: 575.0000 },
+            'KES': { name: 'Kenyan Shilling', symbol: 'KSh', baseRate: 130.0000 },
+            'ETB': { name: 'Ethiopian Birr', symbol: 'Br', baseRate: 55.0000 },
+            'DJF': { name: 'Djibouti Franc', symbol: 'Fdj', baseRate: 177.7000 },
+            'ERN': { name: 'Eritrean Nakfa', symbol: 'Nfk', baseRate: 15.0000 },
+            'SDG': { name: 'Sudanese Pound', symbol: 'SDG', baseRate: 600.0000 }
+        };
+    }
+
+    // Load realistic exchange rates with small profit margins
+    loadExchangeRates() {
+        Object.keys(this.currencies).forEach(fromCurrency => {
+            this.exchangeRates[fromCurrency] = {};
+            Object.keys(this.currencies).forEach(toCurrency => {
+                if (fromCurrency === toCurrency) {
+                    this.exchangeRates[fromCurrency][toCurrency] = 1.0000;
+                } else {
+                    // Calculate base rate
+                    const baseRate = this.currencies[toCurrency].baseRate / this.currencies[fromCurrency].baseRate;
+                    // Add small realistic profit margin (1-3%)
+                    const profitMargin = 1 + (Math.random() * 0.02 + 0.01);
+                    this.exchangeRates[fromCurrency][toCurrency] = parseFloat((baseRate * profitMargin).toFixed(4));
+                }
+            });
+        });
     }
 
     // API Helper Methods
@@ -350,27 +388,54 @@ class CashBookApp {
         tbody.innerHTML = '';
         
         if (transactions.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; color: #64748b;">No transactions found</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="9" style="text-align: center; color: #64748b;">No transactions found</td></tr>';
             return;
         }
         
         transactions.forEach(tx => {
             const row = document.createElement('tr');
             row.innerHTML = `
-                <td>${new Date(tx.createdAt).toLocaleDateString()}</td>
+                <td>${this.formatDateTime(tx.createdAt)}</td>
                 <td>${tx.customerName}</td>
                 <td>
-                    <span class="status-badge ${tx.transactionType === 'usd_to_ugx' ? 'info' : 'success'}">
-                        ${tx.transactionType === 'usd_to_ugx' ? 'USD to UGX' : 'UGX to USD'}
+                    <span class="status-badge info">
+                        ${tx.fromCurrency} → ${tx.toCurrency}
                     </span>
                 </td>
-                <td>${tx.transactionType === 'usd_to_ugx' ? this.formatCurrency(tx.amount, 'USD') : this.formatCurrency(tx.amount, 'UGX')}</td>
+                <td>${this.formatCurrency(tx.fromAmount, tx.fromCurrency)}</td>
                 <td>${tx.exchangeRate.toLocaleString()}</td>
-                <td>${tx.transactionType === 'usd_to_ugx' ? this.formatCurrency(tx.convertedAmount, 'UGX') : this.formatCurrency(tx.convertedAmount, 'USD')}</td>
-                <td>${this.formatCurrency(tx.profit, 'USD')}</td>
+                <td>${this.formatCurrency(tx.toAmount, tx.toCurrency)}</td>
+                <td>${this.formatCurrency(tx.profitUSD, 'USD')}</td>
                 <td>${tx.notes || '-'}</td>
+                <td>
+                    <div class="action-buttons">
+                        <button class="btn-action btn-edit" onclick="app.editTransaction('${tx.id}')">Edit</button>
+                    </div>
+                </td>
             `;
             tbody.appendChild(row);
+        });
+    }
+
+    updateCurrencyBalances(balances) {
+        const container = document.getElementById('currency-balances');
+        container.innerHTML = '';
+        
+        if (!balances || Object.keys(balances).length === 0) {
+            container.innerHTML = '<div style="text-align: center; color: #64748b; padding: 2rem;">No currency balances found</div>';
+            return;
+        }
+        
+        Object.entries(balances).forEach(([currency, amount]) => {
+            if (amount > 0) {
+                const currencyItem = document.createElement('div');
+                currencyItem.className = 'currency-item';
+                currencyItem.innerHTML = `
+                    <div class="currency-code">${currency}</div>
+                    <div class="currency-amount">${this.formatCurrency(amount, currency)}</div>
+                `;
+                container.appendChild(currencyItem);
+            }
         });
     }
 
@@ -399,7 +464,27 @@ class CashBookApp {
 
     async addTransaction(formData) {
         try {
-            await this.apiCall('/api/client/transactions', 'POST', formData);
+            // Calculate exchange details
+            const exchangeCalc = this.calculateExchange(
+                formData.fromAmount, 
+                formData.fromCurrency, 
+                formData.toCurrency, 
+                formData.profitMargin
+            );
+            
+            const transactionData = {
+                customerName: formData.customerName,
+                fromCurrency: formData.fromCurrency,
+                toCurrency: formData.toCurrency,
+                fromAmount: formData.fromAmount,
+                toAmount: exchangeCalc.toAmount,
+                exchangeRate: exchangeCalc.rate,
+                profitUSD: exchangeCalc.profitUSD,
+                notes: formData.notes,
+                createdAt: new Date().toISOString()
+            };
+            
+            await this.apiCall('/api/client/transactions', 'POST', transactionData);
             this.showToast('Success', 'Transaction added successfully', 'success');
             this.hideAddTransaction();
             this.loadClientDashboard();
@@ -408,14 +493,124 @@ class CashBookApp {
         }
     }
 
-    async updateBalance(formData) {
+    async editTransaction(transactionId) {
         try {
-            await this.apiCall('/api/client/balance', 'PUT', formData);
-            this.showToast('Success', 'Balance updated successfully', 'success');
-            this.hideUpdateBalance();
+            const transaction = await this.apiCall(`/api/client/transactions/${transactionId}`);
+            this.editingTransaction = transaction;
+            
+            // Pre-fill edit form
+            document.getElementById('edit-transaction-id').value = transaction.id;
+            document.getElementById('edit-customer-name').value = transaction.customerName;
+            document.getElementById('edit-from-currency').value = transaction.fromCurrency;
+            document.getElementById('edit-to-currency').value = transaction.toCurrency;
+            document.getElementById('edit-from-amount').value = transaction.fromAmount;
+            document.getElementById('edit-exchange-rate').value = transaction.exchangeRate;
+            document.getElementById('edit-to-amount').value = transaction.toAmount;
+            document.getElementById('edit-profit-margin').value = ((transaction.exchangeRate / this.exchangeRates[transaction.fromCurrency][transaction.toCurrency] - 1) * 100).toFixed(2);
+            document.getElementById('edit-notes').value = transaction.notes || '';
+            
+            this.showEditTransaction();
+        } catch (error) {
+            // Error already shown by apiCall
+        }
+    }
+
+    async updateTransaction(formData) {
+        try {
+            const exchangeCalc = this.calculateExchange(
+                formData.fromAmount, 
+                formData.fromCurrency, 
+                formData.toCurrency, 
+                formData.profitMargin
+            );
+            
+            const transactionData = {
+                id: formData.id,
+                customerName: formData.customerName,
+                fromCurrency: formData.fromCurrency,
+                toCurrency: formData.toCurrency,
+                fromAmount: formData.fromAmount,
+                toAmount: exchangeCalc.toAmount,
+                exchangeRate: exchangeCalc.rate,
+                profitUSD: exchangeCalc.profitUSD,
+                notes: formData.notes,
+                updatedAt: new Date().toISOString()
+            };
+            
+            await this.apiCall(`/api/client/transactions/${formData.id}`, 'PUT', transactionData);
+            this.showToast('Success', 'Transaction updated successfully', 'success');
+            this.hideEditTransaction();
             this.loadClientDashboard();
         } catch (error) {
             // Error already shown by apiCall
+        }
+    }
+
+    async resetTodayProfit() {
+        if (confirm('Are you sure you want to reset today\'s profit? This action cannot be undone.')) {
+            try {
+                await this.apiCall('/api/client/reset-profit', 'POST');
+                this.showToast('Success', 'Today\'s profit has been reset', 'success');
+                this.loadClientDashboard();
+            } catch (error) {
+                // Error already shown by apiCall
+            }
+        }
+    }
+
+    async addCurrency(formData) {
+        try {
+            await this.apiCall('/api/client/currencies', 'POST', formData);
+            this.showToast('Success', 'Currency balance added successfully', 'success');
+            this.hideAddCurrency();
+            this.loadClientDashboard();
+        } catch (error) {
+            // Error already shown by apiCall
+        }
+    }
+
+    async generateReport(formData) {
+        try {
+            const reportData = {
+                startDate: formData.startDate,
+                endDate: formData.endDate,
+                format: formData.format,
+                includeProfit: formData.includeProfit,
+                includeCurrency: formData.includeCurrency,
+                includeCustomers: formData.includeCustomers
+            };
+            
+            this.showLoading();
+            const response = await fetch(`${this.API_BASE}/api/client/reports/generate`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${localStorage.getItem('cashbook_token')}`
+                },
+                body: JSON.stringify(reportData)
+            });
+            
+            if (!response.ok) {
+                throw new Error('Failed to generate report');
+            }
+            
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.style.display = 'none';
+            a.href = url;
+            a.download = `cashbook-report-${formData.startDate}-to-${formData.endDate}.${formData.format === 'pdf' ? 'pdf' : 'xlsx'}`;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+            
+            this.hideLoading();
+            this.showToast('Success', 'Report generated successfully', 'success');
+            this.hideGenerateReport();
+        } catch (error) {
+            this.hideLoading();
+            this.showToast('Error', error.message, 'error');
         }
     }
 
@@ -467,15 +662,140 @@ class CashBookApp {
         document.getElementById('update-balance-form').reset();
     }
 
-    // Utility Methods
+    showEditTransaction() {
+        const modal = document.getElementById('edit-transaction-modal');
+        modal.classList.remove('hidden');
+    }
+
+    hideEditTransaction() {
+        const modal = document.getElementById('edit-transaction-modal');
+        modal.classList.add('hidden');
+        this.editingTransaction = null;
+        
+        // Clear form
+        document.getElementById('edit-transaction-form').reset();
+    }
+
+    showAddCurrency() {
+        const modal = document.getElementById('add-currency-modal');
+        modal.classList.remove('hidden');
+    }
+
+    hideAddCurrency() {
+        const modal = document.getElementById('add-currency-modal');
+        modal.classList.add('hidden');
+        
+        // Clear form
+        document.getElementById('add-currency-form').reset();
+    }
+
+    showGenerateReport() {
+        const modal = document.getElementById('generate-report-modal');
+        modal.classList.remove('hidden');
+        
+        // Set default dates (last 30 days)
+        const endDate = new Date();
+        const startDate = new Date();
+        startDate.setDate(startDate.getDate() - 30);
+        
+        document.getElementById('report-start-date').value = startDate.toISOString().split('T')[0];
+        document.getElementById('report-end-date').value = endDate.toISOString().split('T')[0];
+    }
+
+    hideGenerateReport() {
+        const modal = document.getElementById('generate-report-modal');
+        modal.classList.add('hidden');
+        
+        // Clear form
+        document.getElementById('generate-report-form').reset();
+    }
+
+    // Enhanced exchange calculator
+    updateExchangeCalculator() {
+        const fromAmount = parseFloat(document.getElementById('from-amount').value) || 0;
+        const fromCurrency = document.getElementById('from-currency').value;
+        const toCurrency = document.getElementById('to-currency').value;
+        
+        if (fromAmount > 0 && fromCurrency && toCurrency) {
+            const exchangeCalc = this.calculateExchange(fromAmount, fromCurrency, toCurrency, 2.0);
+            
+            document.getElementById('to-amount').value = exchangeCalc.toAmount.toFixed(4);
+            document.getElementById('current-rate').textContent = exchangeCalc.rate.toFixed(4);
+            document.getElementById('calculated-profit').textContent = this.formatCurrency(exchangeCalc.profitUSD, 'USD');
+        } else {
+            document.getElementById('to-amount').value = '';
+            document.getElementById('current-rate').textContent = '0.00';
+            document.getElementById('calculated-profit').textContent = '$0.00';
+        }
+    }
+
+    // Enhanced transaction form calculator
+    updateTransactionCalculator(formPrefix = '') {
+        const prefix = formPrefix ? formPrefix + '-' : '';
+        const fromAmount = parseFloat(document.getElementById(prefix + 'from-amount-tx').value) || 0;
+        const fromCurrency = document.getElementById(prefix + 'from-currency-tx').value;
+        const toCurrency = document.getElementById(prefix + 'to-currency-tx').value;
+        const profitMargin = parseFloat(document.getElementById(prefix + 'profit-margin-tx').value) || 2.0;
+        
+        if (fromAmount > 0 && fromCurrency && toCurrency) {
+            const exchangeCalc = this.calculateExchange(fromAmount, fromCurrency, toCurrency, profitMargin);
+            
+            document.getElementById(prefix + 'to-amount-tx').value = exchangeCalc.toAmount.toFixed(4);
+            document.getElementById(prefix + 'exchange-rate-tx').value = exchangeCalc.rate.toFixed(4);
+            document.getElementById(prefix + 'expected-profit-tx').textContent = this.formatCurrency(exchangeCalc.profitUSD, 'USD');
+        }
+    }
+
+    // Enhanced Multi-Currency Utility Methods
     formatCurrency(amount, currency) {
-        if (currency === 'USD') {
+        const currencyInfo = this.currencies[currency];
+        if (!currencyInfo) return `${amount}`;
+        
+        if (['USD', 'EUR', 'GBP'].includes(currency)) {
             return new Intl.NumberFormat('en-US', {
                 style: 'currency',
-                currency: 'USD',
+                currency: currency,
             }).format(amount);
         }
-        return `UGX ${new Intl.NumberFormat().format(amount)}`;
+        
+        return `${currencyInfo.symbol} ${new Intl.NumberFormat().format(amount)}`;
+    }
+
+    // Calculate exchange amount with realistic rates
+    calculateExchange(fromAmount, fromCurrency, toCurrency, profitMargin = 2.0) {
+        const baseRate = this.exchangeRates[fromCurrency]?.[toCurrency] || 1;
+        const adjustedRate = baseRate * (1 + profitMargin / 100);
+        const toAmount = fromAmount * adjustedRate;
+        const profit = (toAmount - (fromAmount * baseRate)) * 0.5; // 50% of margin as profit
+        
+        return {
+            toAmount: parseFloat(toAmount.toFixed(4)),
+            rate: parseFloat(adjustedRate.toFixed(4)),
+            profit: parseFloat(profit.toFixed(4)),
+            profitUSD: toCurrency === 'USD' ? profit : profit / (this.exchangeRates[toCurrency]?.['USD'] || 1)
+        };
+    }
+
+    // Format full date and time
+    formatDateTime(date) {
+        return new Date(date).toLocaleString('en-US', {
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+            hour12: false
+        });
+    }
+
+    // Copy to clipboard utility
+    copyToClipboard(text) {
+        navigator.clipboard.writeText(text).then(() => {
+            this.showToast('Success', 'Copied to clipboard!', 'success');
+        }).catch(() => {
+            this.showToast('Error', 'Failed to copy to clipboard', 'error');
+        });
     }
 
     getDaysRemaining() {
@@ -608,13 +928,56 @@ class CashBookApp {
             e.preventDefault();
             const formData = {
                 customerName: document.getElementById('customer-name').value,
-                transactionType: document.getElementById('transaction-type').value,
-                amount: parseFloat(document.getElementById('amount').value),
-                exchangeRate: parseFloat(document.getElementById('exchange-rate').value),
-                notes: document.getElementById('notes').value,
+                fromCurrency: document.getElementById('from-currency-tx').value,
+                toCurrency: document.getElementById('to-currency-tx').value,
+                fromAmount: parseFloat(document.getElementById('from-amount-tx').value),
+                profitMargin: parseFloat(document.getElementById('profit-margin-tx').value),
+                notes: document.getElementById('notes-tx').value,
             };
             
             this.addTransaction(formData);
+        });
+
+        // Edit transaction form
+        document.getElementById('edit-transaction-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const formData = {
+                id: document.getElementById('edit-transaction-id').value,
+                customerName: document.getElementById('edit-customer-name').value,
+                fromCurrency: document.getElementById('edit-from-currency').value,
+                toCurrency: document.getElementById('edit-to-currency').value,
+                fromAmount: parseFloat(document.getElementById('edit-from-amount').value),
+                profitMargin: parseFloat(document.getElementById('edit-profit-margin').value),
+                notes: document.getElementById('edit-notes').value,
+            };
+            
+            this.updateTransaction(formData);
+        });
+
+        // Add currency form
+        document.getElementById('add-currency-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const formData = {
+                currency: document.getElementById('currency-select').value,
+                amount: parseFloat(document.getElementById('currency-amount').value),
+            };
+            
+            this.addCurrency(formData);
+        });
+
+        // Generate report form
+        document.getElementById('generate-report-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const formData = {
+                startDate: document.getElementById('report-start-date').value,
+                endDate: document.getElementById('report-end-date').value,
+                format: document.getElementById('report-format').value,
+                includeProfit: document.getElementById('include-profit').checked,
+                includeCurrency: document.getElementById('include-currency').checked,
+                includeCustomers: document.getElementById('include-customers').checked,
+            };
+            
+            this.generateReport(formData);
         });
 
         // Update balance form
@@ -671,6 +1034,18 @@ class CashBookApp {
             this.showUpdateBalance();
         });
 
+        document.getElementById('reset-profit-btn').addEventListener('click', () => {
+            this.resetTodayProfit();
+        });
+
+        document.getElementById('add-currency-btn').addEventListener('click', () => {
+            this.showAddCurrency();
+        });
+
+        document.getElementById('generate-report-btn').addEventListener('click', () => {
+            this.showGenerateReport();
+        });
+
         document.getElementById('back-to-dashboard').addEventListener('click', () => {
             this.showDashboard();
         });
@@ -700,6 +1075,33 @@ class CashBookApp {
             this.hideUpdateBalance();
         });
 
+        // Edit transaction modal controls
+        document.getElementById('close-edit-transaction').addEventListener('click', () => {
+            this.hideEditTransaction();
+        });
+
+        document.getElementById('cancel-edit-transaction').addEventListener('click', () => {
+            this.hideEditTransaction();
+        });
+
+        // Add currency modal controls
+        document.getElementById('close-add-currency').addEventListener('click', () => {
+            this.hideAddCurrency();
+        });
+
+        document.getElementById('cancel-add-currency').addEventListener('click', () => {
+            this.hideAddCurrency();
+        });
+
+        // Generate report modal controls
+        document.getElementById('close-generate-report').addEventListener('click', () => {
+            this.hideGenerateReport();
+        });
+
+        document.getElementById('cancel-generate-report').addEventListener('click', () => {
+            this.hideGenerateReport();
+        });
+
         // Modal overlay clicks
         document.querySelector('#admin-settings-modal .modal-overlay').addEventListener('click', () => {
             this.hideAdminSettings();
@@ -711,6 +1113,65 @@ class CashBookApp {
 
         document.querySelector('#update-balance-modal .modal-overlay').addEventListener('click', () => {
             this.hideUpdateBalance();
+        });
+
+        document.querySelector('#edit-transaction-modal .modal-overlay').addEventListener('click', () => {
+            this.hideEditTransaction();
+        });
+
+        document.querySelector('#add-currency-modal .modal-overlay').addEventListener('click', () => {
+            this.hideAddCurrency();
+        });
+
+        document.querySelector('#generate-report-modal .modal-overlay').addEventListener('click', () => {
+            this.hideGenerateReport();
+        });
+
+        // Enhanced calculator event listeners
+        document.getElementById('from-amount').addEventListener('input', () => {
+            this.updateExchangeCalculator();
+        });
+
+        document.getElementById('from-currency').addEventListener('change', () => {
+            this.updateExchangeCalculator();
+        });
+
+        document.getElementById('to-currency').addEventListener('change', () => {
+            this.updateExchangeCalculator();
+        });
+
+        // Transaction form calculators
+        document.getElementById('from-amount-tx').addEventListener('input', () => {
+            this.updateTransactionCalculator();
+        });
+
+        document.getElementById('from-currency-tx').addEventListener('change', () => {
+            this.updateTransactionCalculator();
+        });
+
+        document.getElementById('to-currency-tx').addEventListener('change', () => {
+            this.updateTransactionCalculator();
+        });
+
+        document.getElementById('profit-margin-tx').addEventListener('input', () => {
+            this.updateTransactionCalculator();
+        });
+
+        // Edit transaction form calculators
+        document.getElementById('edit-from-amount').addEventListener('input', () => {
+            this.updateTransactionCalculator('edit');
+        });
+
+        document.getElementById('edit-from-currency').addEventListener('change', () => {
+            this.updateTransactionCalculator('edit');
+        });
+
+        document.getElementById('edit-to-currency').addEventListener('change', () => {
+            this.updateTransactionCalculator('edit');
+        });
+
+        document.getElementById('edit-profit-margin').addEventListener('input', () => {
+            this.updateTransactionCalculator('edit');
         });
 
         // Search and filter
