@@ -64,7 +64,8 @@ class CashBookApp {
         
         try {
             this.showLoading();
-            const response = await fetch(`${this.API_BASE}${endpoint}`, options);
+            const response = await fetch(`${this.API_BASE}/api/auth/login`, options);
+
             const result = await response.json();
             
             if (!response.ok) {
