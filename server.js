@@ -15,7 +15,7 @@ app.use(express.json());
 app.use(express.static('.'));
 
 // MongoDB Connection
-mongoose.connect(process.env.MONGO_URI || 'mongodb://localhost:27017/cashbook-pro', {
+mongoose.connect(process.env.MONGO_URI || 'https://cashbook-pro-system.onrender.com/', {
     useNewUrlParser: true,
     useUnifiedTopology: true
 })
