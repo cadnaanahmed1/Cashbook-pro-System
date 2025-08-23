@@ -2,7 +2,7 @@
 class CashBookApp {
     constructor() {
         this.currentUser = null;
-        this.API_BASE = 'https://cashbook-pro-system.onrender.com';
+        this.API_BASE = 'https://cashbook-pro-system.onrender.com/';
         this.moneyExchangerData = {
             owners: [],
             customers: {},
@@ -64,7 +64,7 @@ class CashBookApp {
         
         try {
             this.showLoading();
-            const response = await fetch(`${this.API_BASE}/api/auth/login`, options);
+            const response = await fetch(`${this.API_BASE}${endpoint.replace(/^\/+/,'')}`, options);
 
             const result = await response.json();
             
