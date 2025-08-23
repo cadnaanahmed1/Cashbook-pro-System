@@ -1,55 +1,49 @@
-// CashBook Pro - Enhanced Multi-Currency Vanilla JavaScript Frontend
-
+// CashBook Pro - Money Exchanger System Integration
 class CashBookApp {
     constructor() {
         this.currentUser = null;
         this.API_BASE = 'http://localhost:5000';
-        this.currencies = this.initializeCurrencies();
-        this.exchangeRates = {};
-        this.editingTransaction = null;
+        this.moneyExchangerData = {
+            owners: [],
+            customers: {},
+            transactions: [],
+            ownerBalance: 0
+        };
+        this.editingTransactionId = null;
+        this.debugMode = false;
         this.init();
     }
-
+    
     init() {
-        this.loadExchangeRates();
         this.setupEventListeners();
         this.checkAuthentication();
     }
-
-    // Initialize supported currencies with realistic exchange rates
-    initializeCurrencies() {
-        return {
-            'USD': { name: 'US Dollar', symbol: '$', baseRate: 1.0000 },
-            'EUR': { name: 'Euro', symbol: '€', baseRate: 0.8500 },
-            'GBP': { name: 'British Pound', symbol: '£', baseRate: 0.7800 },
-            'UGX': { name: 'Ugandan Shilling', symbol: 'USh', baseRate: 3750.0000 },
-            'SOS': { name: 'Somali Shilling', symbol: 'S', baseRate: 575.0000 },
-            'KES': { name: 'Kenyan Shilling', symbol: 'KSh', baseRate: 130.0000 },
-            'ETB': { name: 'Ethiopian Birr', symbol: 'Br', baseRate: 55.0000 },
-            'DJF': { name: 'Djibouti Franc', symbol: 'Fdj', baseRate: 177.7000 },
-            'ERN': { name: 'Eritrean Nakfa', symbol: 'Nfk', baseRate: 15.0000 },
-            'SDG': { name: 'Sudanese Pound', symbol: 'SDG', baseRate: 600.0000 }
-        };
+    
+    // Safe event listener helper method
+    safeAddEventListener(selector, eventType, handler, options = {}) {
+        const element = document.querySelector(selector);
+        if (element) {
+            element.addEventListener(eventType, handler, options);
+            return true;
+        }
+        
+        if (this.debugMode) {
+            const criticalElements = [
+                '#login-form',
+                '#register-form',
+                '#logout-btn',
+                '#forgot-password-form',
+                '#reset-password-form'
+            ];
+            
+            if (criticalElements.includes(selector)) {
+                console.warn(`Critical element not found: ${selector}`);
+            }
+        }
+        
+        return false;
     }
-
-    // Load realistic exchange rates with small profit margins
-    loadExchangeRates() {
-        Object.keys(this.currencies).forEach(fromCurrency => {
-            this.exchangeRates[fromCurrency] = {};
-            Object.keys(this.currencies).forEach(toCurrency => {
-                if (fromCurrency === toCurrency) {
-                    this.exchangeRates[fromCurrency][toCurrency] = 1.0000;
-                } else {
-                    // Calculate base rate
-                    const baseRate = this.currencies[toCurrency].baseRate / this.currencies[fromCurrency].baseRate;
-                    // Add small realistic profit margin (1-3%)
-                    const profitMargin = 1 + (Math.random() * 0.02 + 0.01);
-                    this.exchangeRates[fromCurrency][toCurrency] = parseFloat((baseRate * profitMargin).toFixed(4));
-                }
-            });
-        });
-    }
-
+    
     // API Helper Methods
     async apiCall(endpoint, method = 'GET', data = null) {
         const options = {
@@ -58,17 +52,16 @@ class CashBookApp {
                 'Content-Type': 'application/json',
             },
         };
-
-        // Add auth token if available
+        
         const token = localStorage.getItem('cashbook_token');
         if (token) {
             options.headers.Authorization = `Bearer ${token}`;
         }
-
+        
         if (data) {
             options.body = JSON.stringify(data);
         }
-
+        
         try {
             this.showLoading();
             const response = await fetch(`${this.API_BASE}${endpoint}`, options);
@@ -86,7 +79,7 @@ class CashBookApp {
             this.hideLoading();
         }
     }
-
+    
     // Authentication Methods
     async checkAuthentication() {
         const token = localStorage.getItem('cashbook_token');
@@ -105,7 +98,7 @@ class CashBookApp {
             this.showLogin();
         }
     }
-
+    
     async login(username, password) {
         try {
             const result = await this.apiCall('/api/auth/login', 'POST', {
@@ -124,7 +117,7 @@ class CashBookApp {
             // Error already shown by apiCall
         }
     }
-
+    
     async register(formData) {
         try {
             const result = await this.apiCall('/api/auth/register', 'POST', formData);
@@ -140,18 +133,18 @@ class CashBookApp {
             // Error already shown by apiCall
         }
     }
-
+    
     async forgotPassword(email) {
         try {
             await this.apiCall('/api/auth/forgot-password', 'POST', { email });
-            this.showToast('Success', 'Reset code sent (check console in demo mode)!', 'success');
+            this.showToast('Success', 'Reset code sent to your email!', 'success');
             document.getElementById('reset-email').value = email;
             this.showPage('reset-password-page');
         } catch (error) {
             // Error already shown by apiCall
         }
     }
-
+    
     async resetPassword(formData) {
         try {
             await this.apiCall('/api/auth/reset-password', 'POST', formData);
@@ -161,13 +154,13 @@ class CashBookApp {
             // Error already shown by apiCall
         }
     }
-
+    
     async updateAdminSettings(formData) {
         try {
             await this.apiCall('/api/auth/admin-settings', 'PUT', formData);
             this.showToast('Success', 'Admin settings updated successfully!', 'success');
             this.hideAdminSettings();
-            // Update current user data
+            
             const user = await this.apiCall('/api/auth/me');
             this.currentUser = user.user;
             localStorage.setItem('cashbook_user', JSON.stringify(this.currentUser));
@@ -176,7 +169,7 @@ class CashBookApp {
             // Error already shown by apiCall
         }
     }
-
+    
     logout() {
         localStorage.removeItem('cashbook_token');
         localStorage.removeItem('cashbook_user');
@@ -184,18 +177,15 @@ class CashBookApp {
         this.showLogin();
         this.showToast('Info', 'Logged out successfully', 'info');
     }
-
+    
     // UI Navigation Methods
     showPage(pageId) {
-        // Hide all pages
         document.querySelectorAll('.page').forEach(page => {
             page.classList.add('hidden');
         });
         
-        // Show selected page
         document.getElementById(pageId).classList.remove('hidden');
         
-        // Show/hide navbar based on authentication
         const navbar = document.getElementById('navbar');
         if (this.currentUser && pageId !== 'login-page' && pageId !== 'register-page' && 
             pageId !== 'forgot-password-page' && pageId !== 'reset-password-page') {
@@ -204,20 +194,20 @@ class CashBookApp {
             navbar.classList.add('hidden');
         }
     }
-
+    
     showLogin() {
         this.showPage('login-page');
     }
-
+    
     showRegister() {
         this.showPage('register-page');
     }
-
+    
     showPaymentPage() {
         this.updatePaymentPage();
         this.showPage('payment-page');
     }
-
+    
     showDashboard() {
         if (this.currentUser.role === 'owner') {
             this.loadOwnerDashboard();
@@ -226,103 +216,58 @@ class CashBookApp {
             if (this.currentUser.accountStatus !== 'active') {
                 this.showPaymentPage();
             } else {
-                this.loadClientDashboard();
+                // Show Money Exchanger System directly
                 this.showPage('client-dashboard');
+                this.loadMoneyExchangerData();
+                this.updateMoneyExchangerUI();
             }
         }
     }
-
+    
     // Dashboard Loading Methods
     async loadOwnerDashboard() {
         try {
-            // Load owner stats
             const stats = await this.apiCall('/api/owner/stats');
             this.updateOwnerStats(stats);
             
-            // Load clients
             const clients = await this.apiCall('/api/owner/clients');
             this.updateClientsTable(clients);
         } catch (error) {
             console.error('Failed to load owner dashboard:', error);
         }
     }
-
-    async loadClientDashboard() {
-        try {
-            // Load client stats
-            const stats = await this.apiCall('/api/client/stats');
-            this.updateClientStats(stats);
-            
-            // Load balance
-            const balance = await this.apiCall('/api/client/balance');
-            this.updateClientBalance(balance);
-            
-            // Load transactions
-            const transactions = await this.apiCall('/api/client/transactions');
-            this.updateTransactionsTable(transactions);
-            
-            // Update account status
-            this.updateAccountStatus();
-        } catch (error) {
-            console.error('Failed to load client dashboard:', error);
-        }
-    }
-
+    
     // Data Update Methods
     updateUserData() {
         if (this.currentUser) {
             const userInfo = `${this.currentUser.fullName} (${this.currentUser.role.charAt(0).toUpperCase() + this.currentUser.role.slice(1)})`;
             document.getElementById('user-info').textContent = userInfo;
             
-            // Show/hide admin settings button
             const adminBtn = document.getElementById('admin-settings-btn');
-            if (this.currentUser.role === 'owner') {
-                adminBtn.classList.remove('hidden');
-            } else {
-                adminBtn.classList.add('hidden');
+            if (adminBtn) {
+                if (this.currentUser.role === 'owner') {
+                    adminBtn.classList.remove('hidden');
+                } else {
+                    adminBtn.classList.add('hidden');
+                }
             }
         }
     }
-
+    
     updateOwnerStats(stats) {
-        document.getElementById('total-clients').textContent = stats.totalClients || 0;
-        document.getElementById('active-clients').textContent = stats.activeClients || 0;
-        document.getElementById('pending-payments').textContent = stats.pendingPayments || 0;
-        document.getElementById('monthly-revenue').textContent = `$${stats.monthlyRevenue || 0}`;
-    }
-
-    updateClientStats(stats) {
-        document.getElementById('today-profit').textContent = this.formatCurrency(stats.todayProfit || 0, 'USD');
-        document.getElementById('transaction-count').textContent = stats.transactionCount || 0;
-    }
-
-    updateClientBalance(balance) {
-        document.getElementById('usd-balance').textContent = this.formatCurrency(balance.usdBalance || 0, 'USD');
-        document.getElementById('ugx-balance').textContent = this.formatCurrency(balance.ugxBalance || 0, 'UGX');
-    }
-
-    updateAccountStatus() {
-        if (!this.currentUser) return;
+        const totalClientsEl = document.getElementById('total-clients');
+        if (totalClientsEl) totalClientsEl.textContent = stats.totalClients || 0;
         
-        const statusElement = document.getElementById('current-status');
-        const subscriptionElement = document.getElementById('subscription-end');
-        const daysElement = document.getElementById('days-remaining');
+        const activeClientsEl = document.getElementById('active-clients');
+        if (activeClientsEl) activeClientsEl.textContent = stats.activeClients || 0;
         
-        if (statusElement) {
-            statusElement.textContent = this.currentUser.accountStatus.charAt(0).toUpperCase() + this.currentUser.accountStatus.slice(1);
-            statusElement.className = `status-badge ${this.currentUser.accountStatus}`;
-        }
+        const pendingPaymentsEl = document.getElementById('pending-payments');
+        if (pendingPaymentsEl) pendingPaymentsEl.textContent = stats.pendingPayments || 0;
         
-        if (subscriptionElement) {
-            subscriptionElement.textContent = this.currentUser.subscriptionEnd ? 
-                new Date(this.currentUser.subscriptionEnd).toLocaleDateString() : 'N/A';
-        }
-        
-        if (daysElement) {
-            daysElement.textContent = this.getDaysRemaining();
-        }
+        const monthlyRevenueEl = document.getElementById('monthly-revenue');
+        if (monthlyRevenueEl) monthlyRevenueEl.textContent = `$${stats.monthlyRevenue || 0}`;
     }
-
+    
     updatePaymentPage() {
         if (!this.currentUser) return;
         
@@ -332,9 +277,11 @@ class CashBookApp {
             statusBadge.className = `status-badge ${this.currentUser.accountStatus}`;
         }
     }
-
+    
     updateClientsTable(clients) {
         const tbody = document.getElementById('clients-tbody');
+        if (!tbody) return;
+        
         tbody.innerHTML = '';
         
         if (clients.length === 0) {
@@ -382,63 +329,7 @@ class CashBookApp {
             tbody.appendChild(row);
         });
     }
-
-    updateTransactionsTable(transactions) {
-        const tbody = document.getElementById('transactions-tbody');
-        tbody.innerHTML = '';
-        
-        if (transactions.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="9" style="text-align: center; color: #64748b;">No transactions found</td></tr>';
-            return;
-        }
-        
-        transactions.forEach(tx => {
-            const row = document.createElement('tr');
-            row.innerHTML = `
-                <td>${this.formatDateTime(tx.createdAt)}</td>
-                <td>${tx.customerName}</td>
-                <td>
-                    <span class="status-badge info">
-                        ${tx.fromCurrency} → ${tx.toCurrency}
-                    </span>
-                </td>
-                <td>${this.formatCurrency(tx.fromAmount, tx.fromCurrency)}</td>
-                <td>${tx.exchangeRate.toLocaleString()}</td>
-                <td>${this.formatCurrency(tx.toAmount, tx.toCurrency)}</td>
-                <td>${this.formatCurrency(tx.profitUSD, 'USD')}</td>
-                <td>${tx.notes || '-'}</td>
-                <td>
-                    <div class="action-buttons">
-                        <button class="btn-action btn-edit" onclick="app.editTransaction('${tx.id}')">Edit</button>
-                    </div>
-                </td>
-            `;
-            tbody.appendChild(row);
-        });
-    }
-
-    updateCurrencyBalances(balances) {
-        const container = document.getElementById('currency-balances');
-        container.innerHTML = '';
-        
-        if (!balances || Object.keys(balances).length === 0) {
-            container.innerHTML = '<div style="text-align: center; color: #64748b; padding: 2rem;">No currency balances found</div>';
-            return;
-        }
-        
-        Object.entries(balances).forEach(([currency, amount]) => {
-            if (amount > 0) {
-                const currencyItem = document.createElement('div');
-                currencyItem.className = 'currency-item';
-                currencyItem.innerHTML = `
-                    <div class="currency-code">${currency}</div>
-                    <div class="currency-amount">${this.formatCurrency(amount, currency)}</div>
-                `;
-                container.appendChild(currencyItem);
-            }
-        });
-    }
-
+    
     // Client Action Methods
     async verifyPayment(clientId) {
         try {
@@ -449,7 +340,7 @@ class CashBookApp {
             // Error already shown by apiCall
         }
     }
-
+    
     async suspendClient(clientId) {
         if (confirm('Are you sure you want to suspend this client account?')) {
             try {
@@ -461,335 +352,1328 @@ class CashBookApp {
             }
         }
     }
-
-    async addTransaction(formData) {
+    
+    // Money Exchanger System Methods
+    async loadMoneyExchangerData() {
         try {
-            // Calculate exchange details
-            const exchangeCalc = this.calculateExchange(
-                formData.fromAmount, 
-                formData.fromCurrency, 
-                formData.toCurrency, 
-                formData.profitMargin
+            const response = await this.apiCall('/api/money-exchanger/data');
+            this.moneyExchangerData = response;
+        } catch (error) {
+            console.error('Error loading Money Exchanger data:', error);
+            this.moneyExchangerData = {
+                owners: [this.currentUser.fullName],
+                customers: {},
+                transactions: [],
+                ownerBalance: 0
+            };
+        }
+    }
+    
+    updateMoneyExchangerUI() {
+        const currentOwner = document.getElementById('current-owner');
+        const ownerBalance = document.getElementById('owner-balance');
+        const modalOwnerName = document.getElementById('modal-owner-name');
+        const modalOwnerBalance = document.getElementById('modal-owner-balance');
+        
+        if (currentOwner) {
+            currentOwner.textContent = this.currentUser.fullName;
+        }
+        
+        if (ownerBalance) {
+            ownerBalance.textContent = this.moneyExchangerData.ownerBalance.toFixed(2);
+        }
+        
+        if (modalOwnerName) {
+            modalOwnerName.textContent = this.currentUser.fullName;
+        }
+        
+        if (modalOwnerBalance) {
+            modalOwnerBalance.textContent = this.moneyExchangerData.ownerBalance.toFixed(2);
+        }
+        
+        this.updateAccountStatusUI();
+        this.updateOwnersList();
+        this.updateMoneyExchangerStats();
+        this.updateCustomersList();
+        
+        if (document.getElementById('all-transactions-tab')?.classList.contains('active')) {
+            this.displayMoneyExchangerTransactions();
+        }
+    }
+    
+    updateAccountStatusUI() {
+        if (!this.currentUser) return;
+        
+        // Dashboard elements
+        const accountStatusEl = document.getElementById('account-status');
+        const expiryDateEl = document.getElementById('expiry-date');
+        
+        // Modal elements
+        const modalAccountStatusEl = document.getElementById('modal-account-status');
+        const modalExpiryDateEl = document.getElementById('modal-expiry-date');
+        
+        if (accountStatusEl) {
+            accountStatusEl.textContent = this.currentUser.accountStatus.charAt(0).toUpperCase() + 
+                                       this.currentUser.accountStatus.slice(1);
+            accountStatusEl.className = `status-badge ${this.currentUser.accountStatus}`;
+        }
+        
+        if (expiryDateEl && this.currentUser.subscriptionEnd) {
+            expiryDateEl.textContent = new Date(this.currentUser.subscriptionEnd).toLocaleDateString();
+        }
+        
+        if (modalAccountStatusEl) {
+            modalAccountStatusEl.textContent = this.currentUser.accountStatus.charAt(0).toUpperCase() + 
+                                            this.currentUser.accountStatus.slice(1);
+            modalAccountStatusEl.className = `status-badge ${this.currentUser.accountStatus}`;
+        }
+        
+        if (modalExpiryDateEl && this.currentUser.subscriptionEnd) {
+            modalExpiryDateEl.textContent = new Date(this.currentUser.subscriptionEnd).toLocaleDateString();
+        }
+    }
+    
+    updateMoneyExchangerStats() {
+        const activeCustomersCount = document.getElementById('active-customers-count');
+        const todayTransactionsCount = document.getElementById('today-transactions-count');
+        const systemBalance = document.getElementById('system-balance');
+        
+        if (activeCustomersCount) {
+            activeCustomersCount.textContent = Object.keys(this.moneyExchangerData.customers).length;
+        }
+        
+        if (todayTransactionsCount) {
+            const today = new Date().toDateString();
+            const todayTransactions = this.moneyExchangerData.transactions.filter(
+                t => new Date(t.date).toDateString() === today
             );
-            
-            const transactionData = {
-                customerName: formData.customerName,
-                fromCurrency: formData.fromCurrency,
-                toCurrency: formData.toCurrency,
-                fromAmount: formData.fromAmount,
-                toAmount: exchangeCalc.toAmount,
-                exchangeRate: exchangeCalc.rate,
-                profitUSD: exchangeCalc.profitUSD,
-                notes: formData.notes,
-                createdAt: new Date().toISOString()
-            };
-            
-            await this.apiCall('/api/client/transactions', 'POST', transactionData);
-            this.showToast('Success', 'Transaction added successfully', 'success');
-            this.hideAddTransaction();
-            this.loadClientDashboard();
-        } catch (error) {
-            // Error already shown by apiCall
+            todayTransactionsCount.textContent = todayTransactions.length;
+        }
+        
+        if (systemBalance) {
+            systemBalance.textContent = `$${this.moneyExchangerData.ownerBalance.toFixed(2)}`;
         }
     }
-
-    async editTransaction(transactionId) {
-        try {
-            const transaction = await this.apiCall(`/api/client/transactions/${transactionId}`);
-            this.editingTransaction = transaction;
-            
-            // Pre-fill edit form
-            document.getElementById('edit-transaction-id').value = transaction.id;
-            document.getElementById('edit-customer-name').value = transaction.customerName;
-            document.getElementById('edit-from-currency').value = transaction.fromCurrency;
-            document.getElementById('edit-to-currency').value = transaction.toCurrency;
-            document.getElementById('edit-from-amount').value = transaction.fromAmount;
-            document.getElementById('edit-exchange-rate').value = transaction.exchangeRate;
-            document.getElementById('edit-to-amount').value = transaction.toAmount;
-            document.getElementById('edit-profit-margin').value = ((transaction.exchangeRate / this.exchangeRates[transaction.fromCurrency][transaction.toCurrency] - 1) * 100).toFixed(2);
-            document.getElementById('edit-notes').value = transaction.notes || '';
-            
-            this.showEditTransaction();
-        } catch (error) {
-            // Error already shown by apiCall
-        }
-    }
-
-    async updateTransaction(formData) {
-        try {
-            const exchangeCalc = this.calculateExchange(
-                formData.fromAmount, 
-                formData.fromCurrency, 
-                formData.toCurrency, 
-                formData.profitMargin
-            );
-            
-            const transactionData = {
-                id: formData.id,
-                customerName: formData.customerName,
-                fromCurrency: formData.fromCurrency,
-                toCurrency: formData.toCurrency,
-                fromAmount: formData.fromAmount,
-                toAmount: exchangeCalc.toAmount,
-                exchangeRate: exchangeCalc.rate,
-                profitUSD: exchangeCalc.profitUSD,
-                notes: formData.notes,
-                updatedAt: new Date().toISOString()
-            };
-            
-            await this.apiCall(`/api/client/transactions/${formData.id}`, 'PUT', transactionData);
-            this.showToast('Success', 'Transaction updated successfully', 'success');
-            this.hideEditTransaction();
-            this.loadClientDashboard();
-        } catch (error) {
-            // Error already shown by apiCall
-        }
-    }
-
-    async resetTodayProfit() {
-        if (confirm('Are you sure you want to reset today\'s profit? This action cannot be undone.')) {
-            try {
-                await this.apiCall('/api/client/reset-profit', 'POST');
-                this.showToast('Success', 'Today\'s profit has been reset', 'success');
-                this.loadClientDashboard();
-            } catch (error) {
-                // Error already shown by apiCall
-            }
-        }
-    }
-
-    async addCurrency(formData) {
-        try {
-            await this.apiCall('/api/client/currencies', 'POST', formData);
-            this.showToast('Success', 'Currency balance added successfully', 'success');
-            this.hideAddCurrency();
-            this.loadClientDashboard();
-        } catch (error) {
-            // Error already shown by apiCall
-        }
-    }
-
-    async generateReport(formData) {
-        try {
-            const reportData = {
-                startDate: formData.startDate,
-                endDate: formData.endDate,
-                format: formData.format,
-                includeProfit: formData.includeProfit,
-                includeCurrency: formData.includeCurrency,
-                includeCustomers: formData.includeCustomers
-            };
-            
-            this.showLoading();
-            const response = await fetch(`${this.API_BASE}/api/client/reports/generate`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${localStorage.getItem('cashbook_token')}`
-                },
-                body: JSON.stringify(reportData)
+    
+    updateCustomersList() {
+        // Update the datalist for existing customers
+        const payerCustomersList = document.getElementById('payer-customers-list');
+        const payeeCustomersList = document.getElementById('payee-customers-list');
+        const geCustomerSelect = document.getElementById('ge-customer-select');
+        const adjustmentCustomerSelect = document.getElementById('adjustment-customer-select');
+        
+        if (payerCustomersList) {
+            payerCustomersList.innerHTML = '';
+            Object.keys(this.moneyExchangerData.customers).forEach(customer => {
+                const option = document.createElement('option');
+                option.value = customer;
+                payerCustomersList.appendChild(option);
             });
-            
-            if (!response.ok) {
-                throw new Error('Failed to generate report');
-            }
-            
-            const blob = await response.blob();
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.style.display = 'none';
-            a.href = url;
-            a.download = `cashbook-report-${formData.startDate}-to-${formData.endDate}.${formData.format === 'pdf' ? 'pdf' : 'xlsx'}`;
-            document.body.appendChild(a);
-            a.click();
-            window.URL.revokeObjectURL(url);
-            document.body.removeChild(a);
-            
-            this.hideLoading();
-            this.showToast('Success', 'Report generated successfully', 'success');
-            this.hideGenerateReport();
+        }
+        
+        if (payeeCustomersList) {
+            payeeCustomersList.innerHTML = '';
+            Object.keys(this.moneyExchangerData.customers).forEach(customer => {
+                const option = document.createElement('option');
+                option.value = customer;
+                payeeCustomersList.appendChild(option);
+            });
+        }
+        
+        if (geCustomerSelect) {
+            geCustomerSelect.innerHTML = '<option value="">Select Customer</option>';
+            Object.keys(this.moneyExchangerData.customers).forEach(customer => {
+                const option = document.createElement('option');
+                option.value = customer;
+                option.textContent = customer;
+                geCustomerSelect.appendChild(option);
+            });
+        }
+        
+        if (adjustmentCustomerSelect) {
+            adjustmentCustomerSelect.innerHTML = '<option value="">Select Customer</option>';
+            Object.keys(this.moneyExchangerData.customers).forEach(customer => {
+                const option = document.createElement('option');
+                option.value = customer;
+                option.textContent = customer;
+                adjustmentCustomerSelect.appendChild(option);
+            });
+        }
+    }
+    
+    openMoneyExchanger() {
+        const modal = document.getElementById('money-exchanger-modal');
+        if (modal) {
+            modal.classList.remove('hidden');
+            this.loadMoneyExchangerData();
+            this.updateMoneyExchangerUI();
+        }
+    }
+    
+    closeMoneyExchanger() {
+        const modal = document.getElementById('money-exchanger-modal');
+        if (modal) {
+            modal.classList.add('hidden');
+        }
+    }
+    
+    updateOwnersList() {
+        const ownersList = document.getElementById('owners-list');
+        const ownerSelects = document.querySelectorAll('[id$="-owner-select"]');
+        
+        if (ownersList) {
+            ownersList.textContent = this.moneyExchangerData.owners.length > 0 
+                ? this.moneyExchangerData.owners.join(', ') 
+                : 'None';
+        }
+        
+        ownerSelects.forEach(select => {
+            select.innerHTML = '<option value="">Select Owner</option>';
+            // Use a Set to ensure unique owners
+            const uniqueOwners = [...new Set(this.moneyExchangerData.owners)];
+            uniqueOwners.forEach(owner => {
+                const option = document.createElement('option');
+                option.value = owner;
+                option.textContent = owner;
+                select.appendChild(option);
+            });
+        });
+    }
+    
+    async addOwner() {
+        const nameInput = document.getElementById('new-owner-name');
+        const name = nameInput.value.trim();
+        
+        if (!name) {
+            this.showToast('Error', 'Please enter owner name', 'error');
+            return;
+        }
+        
+        // Check if owner already exists
+        if (this.moneyExchangerData.owners.includes(name)) {
+            this.showToast('Error', 'Owner already exists', 'error');
+            return;
+        }
+        
+        try {
+            await this.apiCall('/api/money-exchanger/owners', 'POST', { name });
+            this.moneyExchangerData.owners.push(name);
+            nameInput.value = '';
+            this.updateOwnersList();
+            this.showToast('Success', 'Owner added successfully', 'success');
         } catch (error) {
-            this.hideLoading();
             this.showToast('Error', error.message, 'error');
         }
     }
+    
+    setupCheckboxListeners(prefix) {
+        const payerOwnerChk = document.getElementById(`${prefix}-payer-owner-chk`);
+        const payerCustomerChk = document.getElementById(`${prefix}-payer-customer-chk`);
+        
+        if (payerOwnerChk) {
+            payerOwnerChk.addEventListener('change', () => {
+                this.handleCheckboxChange(prefix, 'payer', 'owner');
+            });
+        }
+        
+        if (payerCustomerChk) {
+            payerCustomerChk.addEventListener('change', () => {
+                this.handleCheckboxChange(prefix, 'payer', 'customer');
+            });
+        }
+        
+        const payeeOwnerChk = document.getElementById(`${prefix}-payee-owner-chk`);
+        const payeeCustomerChk = document.getElementById(`${prefix}-payee-customer-chk`);
+        
+        if (payeeOwnerChk) {
+            payeeOwnerChk.addEventListener('change', () => {
+                this.handleCheckboxChange(prefix, 'payee', 'owner');
+            });
+        }
+        
+        if (payeeCustomerChk) {
+            payeeCustomerChk.addEventListener('change', () => {
+                this.handleCheckboxChange(prefix, 'payee', 'customer');
+            });
+        }
+    }
+    
+    handleCheckboxChange(prefix, role, type) {
+        const otherType = type === 'owner' ? 'customer' : 'owner';
+        const checkbox = document.getElementById(`${prefix}-${role}-${type}-chk`);
+        const otherCheckbox = document.getElementById(`${prefix}-${role}-${otherType}-chk`);
+        const div = document.getElementById(`${prefix}-${role}-${type}-div`);
+        const otherDiv = document.getElementById(`${prefix}-${role}-${otherType}-div`);
+        
+        if (checkbox.checked) {
+            div.style.display = 'block';
+            otherCheckbox.checked = false;
+            otherDiv.style.display = 'none';
+        } else {
+            div.style.display = 'none';
+        }
+    }
+    
+    switchTab(tabId) {
+        document.querySelectorAll('.tab-content').forEach(tab => {
+            tab.classList.remove('active');
+        });
+        
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.classList.remove('active');
+        });
+        
+        const tab = document.getElementById(tabId);
+        if (tab) {
+            tab.classList.add('active');
+        }
+        
+        const btn = document.querySelector(`[data-tab="${tabId}"]`);
+        if (btn) {
+            btn.classList.add('active');
+        }
+        
+        if (tabId === 'all-transactions-tab') {
+            this.displayMoneyExchangerTransactions();
+        }
+    }
+    
+    async addNewPersonTransaction() {
+        const isPayerOwner = document.getElementById('np-payer-owner-chk').checked;
+        const isPayerCustomer = document.getElementById('np-payer-customer-chk').checked;
+        const isPayeeOwner = document.getElementById('np-payee-owner-chk').checked;
+        const isPayeeCustomer = document.getElementById('np-payee-customer-chk').checked;
+        
+        if (!isPayerOwner && !isPayerCustomer) {
+            this.showMessage('np-message', 'Please select who is paying (Payer)', 'error');
+            return;
+        }
+        
+        if (!isPayeeOwner && !isPayeeCustomer) {
+            this.showMessage('np-message', 'Please select who is receiving (Payee)', 'error');
+            return;
+        }
+        
+        let payerName = '';
+        let payerType = '';
+        let receiverName = '';
+        let receiverType = '';
+        
+        if (isPayerOwner) {
+            payerName = document.getElementById('np-payer-owner-select').value;
+            payerType = 'owner';
+        } else {
+            payerName = document.getElementById('np-payer-customer-name').value.trim();
+            payerType = 'customer';
+        }
+        
+        if (isPayeeOwner) {
+            receiverName = document.getElementById('np-payee-owner-select').value;
+            receiverType = 'owner';
+        } else {
+            receiverName = document.getElementById('np-payee-customer-name').value.trim();
+            receiverType = 'customer';
+        }
+        
+        if (payerName === receiverName) {
+            this.showMessage('np-message', 'Payer and Payee cannot be the same person', 'error');
+            return;
+        }
+        
+        const amount = parseFloat(document.getElementById('np-amount').value);
+        const desc = document.getElementById('np-desc').value.trim();
+        const cashType = document.getElementById('np-cash-type').value;
+        
+        if (!amount || amount <= 0) {
+            this.showMessage('np-message', 'Please enter valid amount', 'error');
+            return;
+        }
+        
+        if (!cashType) {
+            this.showMessage('np-message', 'Please select cash type', 'error');
+            return;
+        }
+        
+        // Check if customer already exists
+        if (payerType === 'customer' && this.moneyExchangerData.customers[payerName] !== undefined) {
+            this.showMessage('np-message', 'Payer customer already exists. Use Old Person tab instead.', 'error');
+            return;
+        }
+        
+        if (receiverType === 'customer' && this.moneyExchangerData.customers[receiverName] !== undefined) {
+            this.showMessage('np-message', 'Payee customer already exists. Use Old Person tab instead.', 'error');
+            return;
+        }
+        
+        // Debt Validation: Check if payer has outstanding debt before lending
+        if (payerType === 'owner' && this.moneyExchangerData.ownerBalance < 0) {
+            this.showMessage('np-message', 'You already have outstanding debt. Please clear your debt before lending to others.', 'error');
+            return;
+        }
+        
+        if (payerType === 'customer' && this.moneyExchangerData.customers[payerName] < 0) {
+            this.showMessage('np-message', 'You already have outstanding debt. Please clear your debt before lending to others.', 'error');
+            return;
+        }
+        
+        const transaction = {
+            date: new Date().toISOString(),
+            type: 'New Person',
+            payer: payerName,
+            receiver: receiverName,
+            amount: amount,
+            description: desc,
+            cashType: cashType
+        };
+        
+        try {
+            const response = await this.apiCall('/api/money-exchanger/transactions', 'POST', transaction);
+            
+            // Use the transaction returned from server (with ID)
+            this.moneyExchangerData.transactions.push(response.transaction);
+            
+            // Debt Creation: Update balances according to rules
+            if (payerType === 'owner') {
+                this.moneyExchangerData.ownerBalance -= amount; // Payer's account decreases
+                if (receiverType === 'customer') {
+                    this.moneyExchangerData.customers[receiverName] = amount; // Receiver's account increases
+                }
+            } else if (payerType === 'customer') {
+                if (receiverType === 'owner') {
+                    this.moneyExchangerData.ownerBalance += amount; // Receiver's account increases
+                    this.moneyExchangerData.customers[payerName] = -amount; // Payer's account decreases
+                } else if (receiverType === 'customer') {
+                    this.moneyExchangerData.customers[payerName] = -amount; // Payer's account decreases
+                    this.moneyExchangerData.customers[receiverName] = amount; // Receiver's account increases
+                }
+            }
+            
+            await this.saveMoneyExchangerData();
+            
+            this.updateMoneyExchangerUI();
+            this.clearNewPersonForm();
+            this.showMessage('np-message', 'Transaction added successfully', 'success');
+        } catch (error) {
+            this.showMessage('np-message', error.message, 'error');
+        }
+    }
+    
+    // Show customer balance when selected in old person tab
+    setupOldPersonCustomerListeners() {
+        const payerCustomerInput = document.getElementById('op-payer-customer-name');
+        const payeeCustomerInput = document.getElementById('op-payee-customer-name');
+        
+        if (payerCustomerInput) {
+            payerCustomerInput.addEventListener('input', (e) => {
+                const customerName = e.target.value.trim();
+                const balanceDiv = document.getElementById('op-payer-customer-balance');
+                
+                if (customerName && this.moneyExchangerData.customers[customerName] !== undefined) {
+                    const balance = this.moneyExchangerData.customers[customerName];
+                    balanceDiv.textContent = `Balance: $${balance.toFixed(2)}`;
+                    balanceDiv.style.display = 'block';
+                } else {
+                    balanceDiv.style.display = 'none';
+                }
+            });
+        }
+        
+        if (payeeCustomerInput) {
+            payeeCustomerInput.addEventListener('input', (e) => {
+                const customerName = e.target.value.trim();
+                const balanceDiv = document.getElementById('op-payee-customer-balance');
+                
+                if (customerName && this.moneyExchangerData.customers[customerName] !== undefined) {
+                    const balance = this.moneyExchangerData.customers[customerName];
+                    balanceDiv.textContent = `Balance: $${balance.toFixed(2)}`;
+                    balanceDiv.style.display = 'block';
+                } else {
+                    balanceDiv.style.display = 'none';
+                }
+            });
+        }
+    }
+    
+    handleOldPersonTransaction(type) {
+        // Get form values
+        const isPayerOwner = document.getElementById('op-payer-owner-chk').checked;
+        const isPayerCustomer = document.getElementById('op-payer-customer-chk').checked;
+        const isPayeeOwner = document.getElementById('op-payee-owner-chk').checked;
+        const isPayeeCustomer = document.getElementById('op-payee-customer-chk').checked;
+        
+        if (!isPayerOwner && !isPayerCustomer) {
+            this.showMessage('op-message', 'Please select who is paying (Payer)', 'error');
+            return;
+        }
+        
+        if (!isPayeeOwner && !isPayeeCustomer) {
+            this.showMessage('op-message', 'Please select who is receiving (Payee)', 'error');
+            return;
+        }
+        
+        let payerName = '';
+        let payerType = '';
+        let receiverName = '';
+        let receiverType = '';
+        
+        if (isPayerOwner) {
+            payerName = document.getElementById('op-payer-owner-select').value;
+            payerType = 'owner';
+        } else {
+            payerName = document.getElementById('op-payer-customer-name').value.trim();
+            payerType = 'customer';
+        }
+        
+        if (isPayeeOwner) {
+            receiverName = document.getElementById('op-payee-owner-select').value;
+            receiverType = 'owner';
+        } else {
+            receiverName = document.getElementById('op-payee-customer-name').value.trim();
+            receiverType = 'customer';
+        }
+        
+        if (payerName === receiverName) {
+            this.showMessage('op-message', 'Payer and Payee cannot be the same person', 'error');
+            return;
+        }
+        
+        const amount = parseFloat(document.getElementById('op-amount').value);
+        const desc = document.getElementById('op-desc').value.trim();
+        const cashType = document.getElementById('op-cash-type').value;
+        
+        if (!amount || amount <= 0) {
+            this.showMessage('op-message', 'Please enter valid amount', 'error');
+            return;
+        }
+        
+        if (!cashType) {
+            this.showMessage('op-message', 'Please select cash type', 'error');
+            return;
+        }
+        
+        // Check if customer exists
+        if (payerType === 'customer' && this.moneyExchangerData.customers[payerName] === undefined) {
+            this.showMessage('op-message', 'Payer customer does not exist. Use New Person tab instead.', 'error');
+            return;
+        }
+        
+        if (receiverType === 'customer' && this.moneyExchangerData.customers[receiverName] === undefined) {
+            this.showMessage('op-message', 'Receiver customer does not exist. Use New Person tab instead.', 'error');
+            return;
+        }
+        
+        // Partial Payment Validation
+        if (type === 'PR') {
+            if (payerType === 'customer') {
+                const currentBalance = this.moneyExchangerData.customers[payerName];
+                if (currentBalance >= 0) {
+                    this.showMessage('op-message', 'This customer does not have any debt to make a partial payment.', 'error');
+                    return;
+                }
+                const debtAmount = Math.abs(currentBalance);
+                if (amount >= debtAmount) {
+                    this.showMessage('op-message', 'Amount must be less than the total debt for a partial payment. Use Full Payment for exact amount.', 'error');
+                    return;
+                }
+            } else if (payerType === 'owner') {
+                if (this.moneyExchangerData.ownerBalance >= 0) {
+                    this.showMessage('op-message', 'Owner does not have any debt to make a partial payment.', 'error');
+                    return;
+                }
+                const debtAmount = Math.abs(this.moneyExchangerData.ownerBalance);
+                if (amount >= debtAmount) {
+                    this.showMessage('op-message', 'Amount must be less than the total debt for a partial payment. Use Full Payment for exact amount.', 'error');
+                    return;
+                }
+            }
+        }
+        
+        // Full Payment Validation
+        if (type === 'Full') {
+            if (payerType === 'customer') {
+                const currentBalance = this.moneyExchangerData.customers[payerName];
+                if (currentBalance >= 0) {
+                    this.showMessage('op-message', 'This customer does not have any debt to make a full payment.', 'error');
+                    return;
+                }
+                const debtAmount = Math.abs(currentBalance);
+                if (amount !== debtAmount) {
+                    this.showMessage('op-message', `Amount must be exactly $${debtAmount.toFixed(2)} for a full payment.`, 'error');
+                    return;
+                }
+            } else if (payerType === 'owner') {
+                if (this.moneyExchangerData.ownerBalance >= 0) {
+                    this.showMessage('op-message', 'Owner does not have any debt to make a full payment.', 'error');
+                    return;
+                }
+                const debtAmount = Math.abs(this.moneyExchangerData.ownerBalance);
+                if (amount !== debtAmount) {
+                    this.showMessage('op-message', `Amount must be exactly $${debtAmount.toFixed(2)} for a full payment.`, 'error');
+                    return;
+                }
+            }
+        }
+        
+        // Debt Validation
+        if (type === 'Debt') {
+            if (payerType === 'owner' && this.moneyExchangerData.ownerBalance < 0) {
+                this.showMessage('op-message', 'You already have outstanding debt. Please clear your debt before lending to others.', 'error');
+                return;
+            }
+            
+            if (payerType === 'customer' && this.moneyExchangerData.customers[payerName] < 0) {
+                this.showMessage('op-message', 'You already have outstanding debt. Please clear your debt before lending to others.', 'error');
+                return;
+            }
+        }
+        
+        // Create transaction
+        const transaction = {
+            date: new Date().toISOString(),
+            type: `Old Person (${type})`,
+            payer: payerName,
+            receiver: receiverName,
+            amount: amount,
+            description: desc,
+            cashType: cashType
+        };
+        
+        // Add transaction and update balances based on transaction type
+        this.moneyExchangerData.transactions.push(transaction);
+        
+        if (payerType === 'owner') {
+            // Owner is paying
+            this.moneyExchangerData.ownerBalance -= amount;
+            if (receiverType === 'customer') {
+                // Customer is receiving
+                this.moneyExchangerData.customers[receiverName] += amount;
+            }
+        } else if (payerType === 'customer') {
+            // Customer is paying
+            const currentBalance = this.moneyExchangerData.customers[payerName];
+            
+            if (type === 'PR') {
+                // Partial payment - reduce debt
+                this.moneyExchangerData.customers[payerName] = currentBalance - amount;
+                if (receiverType === 'owner') {
+                    this.moneyExchangerData.ownerBalance += amount;
+                }
+            } else if (type === 'Full') {
+                // Full payment - clear debt
+                this.moneyExchangerData.customers[payerName] = 0;
+                if (receiverType === 'owner') {
+                    this.moneyExchangerData.ownerBalance += amount;
+                }
+            } else if (type === 'Debt') {
+                if (payerType === 'customer') {
+                    // Customer paying debt
+                    if (currentBalance > 0) {
+                        this.showMessage('op-message', 'You cannot pay debt because owner owes you money.', 'error');
+                        return;
+                    } else {
+                        // allowed to pay debt
+                        this.moneyExchangerData.customers[payerName] = currentBalance - amount;
+                        if (receiverType === 'owner') {
+                            this.moneyExchangerData.ownerBalance += amount;
+                        }
+                    }
+                } else if (payerType === 'owner') {
+                    // Owner giving debt to customer
+                    const customerBalance = this.moneyExchangerData.customers[receiverName] || 0; // get customer's balance
+                    if (customerBalance < 0) {
+                        this.showMessage('op-message', 'Cannot issue debt because customer already owes money.', 'error');
+                        return;
+                    } else {
+                        // allowed to issue debt
+                        this.moneyExchangerData.customers[receiverName] = customerBalance - amount; // update customer balance
+                        this.moneyExchangerData.ownerBalance += amount; // update owner balance
+                    }
+                }
+            }
+        }
+        
+        // Save and update UI
+        this.saveMoneyExchangerData();
+        this.updateMoneyExchangerUI();
+        this.clearOldPersonForm();
+        this.showMessage('op-message', `${type} transaction added successfully`, 'success');
+    }
+    
+    // Show/hide adjustment options
+    showAdjustmentOptions(show) {
+        const adjustmentOptions = document.getElementById('adjustment-options');
+        if (adjustmentOptions) {
+            adjustmentOptions.style.display = show ? 'block' : 'none';
+            console.log('Adjustment options shown:', show);
+        }
+    }
 
+    handleGeneralEntry(type) {
+    console.log('handleGeneralEntry called with type:', type);
+    
+    const amount = parseFloat(document.getElementById('ge-amount').value);
+    const desc = document.getElementById('ge-desc').value.trim();
+    
+    if (!amount || amount <= 0) {
+        this.showMessage('ge-message', 'Please enter valid amount', 'error');
+        return;
+    }
+    
+    if (!desc) {
+        this.showMessage('ge-message', 'Please enter description', 'error');
+        return;
+    }
+    
+    let payer = 'System';
+    let receiver = 'System';
+    
+    // For Adjustment transactions, set actual payer and receiver names
+    if (type === 'Adjustment') {
+        console.log('Processing adjustment transaction');
+        
+        // Get adjustment type (Owner or Customer)
+        const isAdjustmentOwner = document.getElementById('adjustment-owner-chk').checked;
+        const isAdjustmentCustomer = document.getElementById('adjustment-customer-chk').checked;
+        
+        console.log('Adjustment Owner checked:', isAdjustmentOwner);
+        console.log('Adjustment Customer checked:', isAdjustmentCustomer);
+        
+        if (!isAdjustmentOwner && !isAdjustmentCustomer) {
+            this.showMessage('ge-message', 'Please select who is being adjusted (Owner or Customer)', 'error');
+            return;
+        }
+        
+        let personName = '';
+        let personType = '';
+        
+        if (isAdjustmentOwner) {
+            personName = document.getElementById('adjustment-owner-select').value;
+            personType = 'owner';
+        } else {
+            personName = document.getElementById('adjustment-customer-select').value;
+            personType = 'customer';
+        }
+        
+        console.log('Person name:', personName);
+        console.log('Person type:', personType);
+        
+        if (!personName) {
+            this.showMessage('ge-message', `Please select a ${personType}`, 'error');
+            return;
+        }
+        
+        // Check if customer exists
+        if (personType === 'customer' && this.moneyExchangerData.customers[personName] === undefined) {
+            this.showMessage('ge-message', `Customer ${personName} does not exist`, 'error');
+            return;
+        }
+        
+        // Get adjustment direction
+        const adjustmentDirection = document.querySelector('input[name="adjustment-direction"]:checked')?.value;
+        
+        console.log('Adjustment direction:', adjustmentDirection);
+        
+        if (!adjustmentDirection) {
+            this.showMessage('ge-message', 'Please select adjustment direction (+ or -)', 'error');
+            return;
+        }
+        
+        // Set payer and receiver based on adjustment type and direction
+        if (personType === 'owner') {
+            if (adjustmentDirection === '+') {
+                // Money is added to owner's account (System → Owner)
+                payer = 'System';
+                receiver = personName;
+            } else {
+                // Money is deducted from owner's account (Owner → System)
+                payer = personName;
+                receiver = 'System';
+            }
+        } else if (personType === 'customer') {
+            // Get current owner name
+            const currentOwner = this.currentUser.fullName;
+            
+            if (adjustmentDirection === '+') {
+                // Money is added to customer's account (Owner → Customer)
+                payer = currentOwner;
+                receiver = personName;
+            } else {
+                // Money is deducted from customer's account (Customer → Owner)
+                payer = personName;
+                receiver = currentOwner;
+            }
+        }
+    }
+    
+    // Create transaction
+    const transaction = {
+        date: new Date().toISOString(),
+        type: `General Entry (${type})`,
+        payer: payer,
+        receiver: receiver,
+        amount: amount,
+        description: desc,
+        cashType: 'USD'
+    };
+    
+    // Add transaction and update balance
+    this.moneyExchangerData.transactions.push(transaction);
+    
+    if (type === 'IN') {
+        this.moneyExchangerData.ownerBalance += amount;
+    } else if (type === 'OUT') {
+        this.moneyExchangerData.ownerBalance -= amount;
+    } else if (type === 'Adjustment') {
+        console.log('Processing adjustment transaction');
+        
+        // Get adjustment type (Owner or Customer)
+        const isAdjustmentOwner = document.getElementById('adjustment-owner-chk').checked;
+        const isAdjustmentCustomer = document.getElementById('adjustment-customer-chk').checked;
+        
+        let personName = '';
+        let personType = '';
+        
+        if (isAdjustmentOwner) {
+            personName = document.getElementById('adjustment-owner-select').value;
+            personType = 'owner';
+        } else {
+            personName = document.getElementById('adjustment-customer-select').value;
+            personType = 'customer';
+        }
+        
+        // Get adjustment direction
+        const adjustmentDirection = document.querySelector('input[name="adjustment-direction"]:checked')?.value;
+        
+        // Update balances based on adjustment type and direction
+        if (personType === 'owner') {
+            if (adjustmentDirection === '+') {
+                // Owner's balance increases
+                this.moneyExchangerData.ownerBalance += amount;
+                console.log('Owner balance increased by', amount);
+            } else {
+                // Owner's balance decreases
+                this.moneyExchangerData.ownerBalance -= amount;
+                console.log('Owner balance decreased by', amount);
+            }
+        } else if (personType === 'customer') {
+            if (adjustmentDirection === '+') {
+                // Customer's balance increases, Owner's balance decreases
+                this.moneyExchangerData.customers[personName] += amount;
+                this.moneyExchangerData.ownerBalance -= amount;
+                console.log('Customer balance increased by', amount, 'Owner balance decreased by', amount);
+            } else {
+                // Customer's balance decreases, Owner's balance increases
+                this.moneyExchangerData.customers[personName] -= amount;
+                this.moneyExchangerData.ownerBalance += amount;
+                console.log('Customer balance decreased by', amount, 'Owner balance increased by', amount);
+            }
+        }
+    }
+    
+    // Save and update UI
+    this.saveMoneyExchangerData();
+    this.updateMoneyExchangerUI();
+    this.clearGeneralEntryForm();
+    this.showMessage('ge-message', `${type} entry added successfully`, 'success');
+}
+    
+    // handleGeneralEntry(type) {
+    //     console.log('handleGeneralEntry called with type:', type);
+        
+    //     const amount = parseFloat(document.getElementById('ge-amount').value);
+    //     const desc = document.getElementById('ge-desc').value.trim();
+        
+    //     if (!amount || amount <= 0) {
+    //         this.showMessage('ge-message', 'Please enter valid amount', 'error');
+    //         return;
+    //     }
+        
+    //     if (!desc) {
+    //         this.showMessage('ge-message', 'Please enter description', 'error');
+    //         return;
+    //     }
+        
+    //     // Create transaction
+    //     const transaction = {
+    //         date: new Date().toISOString(),
+    //         type: `General Entry (${type})`,
+    //         payer: 'System',
+    //         receiver: 'System',
+    //         amount: amount,
+    //         description: desc,
+    //         cashType: 'USD'
+    //     };
+        
+    //     // Add transaction and update balance
+    //     this.moneyExchangerData.transactions.push(transaction);
+        
+    //     if (type === 'IN') {
+    //         this.moneyExchangerData.ownerBalance += amount;
+    //     } else if (type === 'OUT') {
+    //         this.moneyExchangerData.ownerBalance -= amount;
+    //     } else if (type === 'Adjustment') {
+    //         console.log('Processing adjustment transaction');
+            
+    //         // Get adjustment type (Owner or Customer)
+    //         const isAdjustmentOwner = document.getElementById('adjustment-owner-chk').checked;
+    //         const isAdjustmentCustomer = document.getElementById('adjustment-customer-chk').checked;
+            
+    //         console.log('Adjustment Owner checked:', isAdjustmentOwner);
+    //         console.log('Adjustment Customer checked:', isAdjustmentCustomer);
+            
+    //         if (!isAdjustmentOwner && !isAdjustmentCustomer) {
+    //             this.showMessage('ge-message', 'Please select who is being adjusted (Owner or Customer)', 'error');
+    //             return;
+    //         }
+            
+    //         let personName = '';
+    //         let personType = '';
+            
+    //         if (isAdjustmentOwner) {
+    //             personName = document.getElementById('adjustment-owner-select').value;
+    //             personType = 'owner';
+    //         } else {
+    //             personName = document.getElementById('adjustment-customer-select').value;
+    //             personType = 'customer';
+    //         }
+            
+    //         console.log('Person name:', personName);
+    //         console.log('Person type:', personType);
+            
+    //         if (!personName) {
+    //             this.showMessage('ge-message', `Please select a ${personType}`, 'error');
+    //             return;
+    //         }
+            
+    //         // Check if customer exists
+    //         if (personType === 'customer' && this.moneyExchangerData.customers[personName] === undefined) {
+    //             this.showMessage('ge-message', `Customer ${personName} does not exist`, 'error');
+    //             return;
+    //         }
+            
+    //         // Get adjustment direction
+    //         const adjustmentDirection = document.querySelector('input[name="adjustment-direction"]:checked')?.value;
+            
+    //         console.log('Adjustment direction:', adjustmentDirection);
+            
+    //         if (!adjustmentDirection) {
+    //             this.showMessage('ge-message', 'Please select adjustment direction (+ or -)', 'error');
+    //             return;
+    //         }
+            
+    //         // Update balances based on adjustment type and direction
+    //         if (personType === 'owner') {
+    //             if (adjustmentDirection === '+') {
+    //                 // Owner's balance increases
+    //                 this.moneyExchangerData.ownerBalance += amount;
+    //                 console.log('Owner balance increased by', amount);
+    //             } else {
+    //                 // Owner's balance decreases
+    //                 this.moneyExchangerData.ownerBalance -= amount;
+    //                 console.log('Owner balance decreased by', amount);
+    //             }
+    //         } else if (personType === 'customer') {
+    //             if (adjustmentDirection === '+') {
+    //                 // Customer's balance increases, Owner's balance decreases
+    //                 this.moneyExchangerData.customers[personName] += amount;
+    //                 this.moneyExchangerData.ownerBalance -= amount;
+    //                 console.log('Customer balance increased by', amount, 'Owner balance decreased by', amount);
+    //             } else {
+    //                 // Customer's balance decreases, Owner's balance increases
+    //                 this.moneyExchangerData.customers[personName] -= amount;
+    //                 this.moneyExchangerData.ownerBalance += amount;
+    //                 console.log('Customer balance decreased by', amount, 'Owner balance increased by', amount);
+    //             }
+    //         }
+    //     }
+        
+    //     // Save and update UI
+    //     this.saveMoneyExchangerData();
+    //     this.updateMoneyExchangerUI();
+    //     this.clearGeneralEntryForm();
+    //     this.showMessage('ge-message', `${type} entry added successfully`, 'success');
+    // }
+    
+    async saveMoneyExchangerData() {
+        try {
+            console.log('Saving Money Exchanger data');
+            await this.apiCall('/api/money-exchanger/data', 'PUT', this.moneyExchangerData);
+        } catch (error) {
+            console.error('Error saving Money Exchanger data:', error);
+        }
+    }
+    
+    displayMoneyExchangerTransactions() {
+        const tbody = document.getElementById('money-exchanger-transactions-tbody');
+        if (!tbody) return;
+        
+        tbody.innerHTML = '';
+        
+        if (this.moneyExchangerData.transactions.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;">No transactions found</td></tr>';
+            return;
+        }
+        
+        // Sort transactions by date (newest first)
+        const sortedTransactions = [...this.moneyExchangerData.transactions].sort((a, b) => 
+            new Date(b.date) - new Date(a.date)
+        );
+        
+        sortedTransactions.forEach((transaction, index) => {
+            const row = tbody.insertRow();
+            const date = new Date(transaction.date);
+            const formattedDate = date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
+            
+            row.innerHTML = `
+                <td>${formattedDate}</td>
+                <td>${transaction.type}</td>
+                <td>${transaction.payer}</td>
+                <td>${transaction.receiver}</td>
+                <td>$${transaction.amount.toFixed(2)}</td>
+                <td>${transaction.description}</td>
+                <td>${transaction.cashType}</td>
+                <td>
+                    <div class="action-buttons">
+                        <button class="btn-edit" onclick="app.openEditTransactionModal('${transaction.id}')">
+                            Edit
+                        </button>
+                        <button class="btn-delete" onclick="app.deleteMoneyExchangerTransaction(${index})">
+                            Delete
+                        </button>
+                    </div>
+                </td>
+            `;
+        });
+    }
+    
+    async deleteMoneyExchangerTransaction(index) {
+        if (confirm('Are you sure you want to delete this transaction?')) {
+            try {
+                // Find the actual index in the original array
+                const transactionToDelete = this.moneyExchangerData.transactions[index];
+                const actualIndex = this.moneyExchangerData.transactions.findIndex(
+                    t => t.id === transactionToDelete.id
+                );
+                
+                if (actualIndex !== -1) {
+                    this.moneyExchangerData.transactions.splice(actualIndex, 1);
+                    await this.saveMoneyExchangerData();
+                    this.displayMoneyExchangerTransactions();
+                    this.updateMoneyExchangerStats();
+                    this.showToast('Success', 'Transaction deleted successfully', 'success');
+                }
+            } catch (error) {
+                this.showToast('Error', error.message, 'error');
+            }
+        }
+    }
+    
+    // Report Generation
+    generatePDFReport(startDate, endDate) {
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
+        
+        // Filter transactions by date range
+        const filteredTransactions = this.moneyExchangerData.transactions.filter(t => {
+            const transactionDate = new Date(t.date);
+            const start = new Date(startDate);
+            const end = new Date(endDate);
+            end.setHours(23, 59, 59, 999); // Include end date
+            return transactionDate >= start && transactionDate <= end;
+        });
+        
+        if (filteredTransactions.length === 0) {
+            this.showToast('Warning', 'No transactions found in the selected date range', 'warning');
+            return;
+        }
+        
+        // Add title
+        doc.setFontSize(18);
+        doc.text('CashBook Pro - Transaction Report', 105, 15, { align: 'center' });
+        
+        // Add date range
+        doc.setFontSize(12);
+        doc.text(`From: ${new Date(startDate).toLocaleDateString()} To: ${new Date(endDate).toLocaleDateString()}`, 
+                105, 25, { align: 'center' });
+        
+        // Add account info
+        doc.text(`Account: ${this.currentUser.fullName} (${this.currentUser.businessName || ''})`, 
+                20, 35);
+        doc.text(`Status: ${this.currentUser.accountStatus}`, 20, 42);
+        
+        // Add table headers
+        doc.setFontSize(10);
+        doc.text('Date', 20, 55);
+        doc.text('Type', 50, 55);
+        doc.text('Payer', 80, 55);
+        doc.text('Receiver', 110, 55);
+        doc.text('Amount', 150, 55);
+        doc.text('Cash Type', 170, 55);
+        
+        // Add transaction data
+        let yPosition = 65;
+        filteredTransactions.forEach(transaction => {
+            if (yPosition > 270) { // Add new page if needed
+                doc.addPage();
+                yPosition = 20;
+            }
+            
+            const date = new Date(transaction.date);
+            const formattedDate = date.toLocaleDateString();
+            
+            doc.text(formattedDate, 20, yPosition);
+            doc.text(transaction.type, 50, yPosition);
+            doc.text(transaction.payer, 80, yPosition);
+            doc.text(transaction.receiver, 110, yPosition);
+            doc.text(`$${transaction.amount.toFixed(2)}`, 150, yPosition);
+            doc.text(transaction.cashType, 170, yPosition);
+            
+            yPosition += 10;
+        });
+        
+        // Add summary
+        const totalAmount = filteredTransactions.reduce((sum, t) => sum + t.amount, 0);
+        doc.text(`Total Transactions: ${filteredTransactions.length}`, 20, yPosition + 10);
+        doc.text(`Total Amount: $${totalAmount.toFixed(2)}`, 20, yPosition + 20);
+        
+        // Save the PDF
+        doc.save(`CashBook_Report_${new Date(startDate).toISOString().split('T')[0]}_to_${new Date(endDate).toISOString().split('T')[0]}.pdf`);
+        
+        this.showToast('Success', 'PDF report generated successfully', 'success');
+    }
+    
+    generateExcelReport(startDate, endDate) {
+        // Filter transactions by date range
+        const filteredTransactions = this.moneyExchangerData.transactions.filter(t => {
+            const transactionDate = new Date(t.date);
+            const start = new Date(startDate);
+            const end = new Date(endDate);
+            end.setHours(23, 59, 59, 999); // Include end date
+            return transactionDate >= start && transactionDate <= end;
+        });
+        
+        if (filteredTransactions.length === 0) {
+            this.showToast('Warning', 'No transactions found in the selected date range', 'warning');
+            return;
+        }
+        
+        // Create workbook
+        const wb = XLSX.utils.book_new();
+        
+        // Create transaction data
+        const transactionData = [
+            ['Date', 'Type', 'Payer', 'Receiver', 'Amount', 'Description', 'Cash Type']
+        ];
+        
+        filteredTransactions.forEach(transaction => {
+            const date = new Date(transaction.date);
+            const formattedDate = date.toLocaleDateString();
+            
+            transactionData.push([
+                formattedDate,
+                transaction.type,
+                transaction.payer,
+                transaction.receiver,
+                transaction.amount,
+                transaction.description,
+                transaction.cashType
+            ]);
+        });
+        
+        // Create worksheet
+        const ws = XLSX.utils.aoa_to_sheet(transactionData);
+        
+        // Add worksheet to workbook
+        XLSX.utils.book_append_sheet(wb, ws, 'Transactions');
+        
+        // Create summary sheet
+        const summaryData = [
+            ['Report Summary'],
+            ['Account Name', this.currentUser.fullName],
+            ['Business Name', this.currentUser.businessName || ''],
+            ['Account Status', this.currentUser.accountStatus],
+            ['Report Period', `${new Date(startDate).toLocaleDateString()} - ${new Date(endDate).toLocaleDateString()}`],
+            ['Total Transactions', filteredTransactions.length],
+            ['Total Amount', filteredTransactions.reduce((sum, t) => sum + t.amount, 0)]
+        ];
+        
+        const summaryWs = XLSX.utils.aoa_to_sheet(summaryData);
+        XLSX.utils.book_append_sheet(wb, summaryWs, 'Summary');
+        
+        // Save the Excel file
+        XLSX.writeFile(wb, `CashBook_Report_${new Date(startDate).toISOString().split('T')[0]}_to_${new Date(endDate).toISOString().split('T')[0]}.xlsx`);
+        
+        this.showToast('Success', 'Excel report generated successfully', 'success');
+    }
+    
+    // Transaction Editing
+    openEditTransactionModal(transactionId) {
+        const transaction = this.moneyExchangerData.transactions.find(t => t.id === transactionId);
+        if (!transaction) {
+            this.showToast('Error', 'Transaction not found', 'error');
+            return;
+        }
+        
+        this.editingTransactionId = transactionId;
+        
+        // Populate form fields
+        document.getElementById('edit-transaction-id').value = transaction.id;
+        document.getElementById('edit-transaction-date').value = new Date(transaction.date).toLocaleString();
+        document.getElementById('edit-transaction-type').value = transaction.type;
+        document.getElementById('edit-transaction-payer').value = transaction.payer;
+        document.getElementById('edit-transaction-receiver').value = transaction.receiver;
+        document.getElementById('edit-transaction-amount').value = transaction.amount;
+        document.getElementById('edit-transaction-description').value = transaction.description;
+        document.getElementById('edit-transaction-cash-type').value = transaction.cashType;
+        
+        // Show modal
+        document.getElementById('edit-transaction-modal').classList.remove('hidden');
+    }
+    
+    closeEditTransactionModal() {
+        document.getElementById('edit-transaction-modal').classList.add('hidden');
+        this.editingTransactionId = null;
+    }
+    
+    async updateTransaction(formData) {
+        try {
+            const transactionIndex = this.moneyExchangerData.transactions.findIndex(
+                t => t.id === this.editingTransactionId
+            );
+            
+            if (transactionIndex === -1) {
+                throw new Error('Transaction not found');
+            }
+            
+            // Update transaction
+            this.moneyExchangerData.transactions[transactionIndex] = {
+                ...this.moneyExchangerData.transactions[transactionIndex],
+                amount: parseFloat(formData.amount),
+                description: formData.description,
+                cashType: formData.cashType
+            };
+            
+            // Save data
+            await this.saveMoneyExchangerData();
+            
+            // Update UI
+            this.displayMoneyExchangerTransactions();
+            this.updateMoneyExchangerStats();
+            this.closeEditTransactionModal();
+            
+            this.showToast('Success', 'Transaction updated successfully', 'success');
+        } catch (error) {
+            this.showToast('Error', error.message, 'error');
+        }
+    }
+    
+    // Form Clearing Methods
+    clearNewPersonForm() {
+        document.getElementById('np-amount').value = '';
+        document.getElementById('np-desc').value = '';
+        document.getElementById('np-cash-type').selectedIndex = 0;
+        
+        document.getElementById('np-payer-owner-chk').checked = false;
+        document.getElementById('np-payer-customer-chk').checked = false;
+        document.getElementById('np-payee-owner-chk').checked = false;
+        document.getElementById('np-payee-customer-chk').checked = false;
+        
+        document.getElementById('np-payer-owner-div').style.display = 'none';
+        document.getElementById('np-payer-customer-div').style.display = 'none';
+        document.getElementById('np-payee-owner-div').style.display = 'none';
+        document.getElementById('np-payee-customer-div').style.display = 'none';
+    }
+    
+    clearOldPersonForm() {
+        document.getElementById('op-amount').value = '';
+        document.getElementById('op-desc').value = '';
+        document.getElementById('op-cash-type').selectedIndex = 0;
+        
+        document.getElementById('op-payer-owner-chk').checked = false;
+        document.getElementById('op-payer-customer-chk').checked = false;
+        document.getElementById('op-payee-owner-chk').checked = false;
+        document.getElementById('op-payee-customer-chk').checked = false;
+        
+        document.getElementById('op-payer-owner-div').style.display = 'none';
+        document.getElementById('op-payer-customer-div').style.display = 'none';
+        document.getElementById('op-payee-owner-div').style.display = 'none';
+        document.getElementById('op-payee-customer-div').style.display = 'none';
+        
+        // Hide balance displays
+        document.getElementById('op-payer-customer-balance').style.display = 'none';
+        document.getElementById('op-payee-customer-balance').style.display = 'none';
+    }
+    
+    clearGeneralEntryForm() {
+        document.getElementById('ge-amount').value = '';
+        document.getElementById('ge-desc').value = '';
+        
+        // Hide adjustment options
+        this.showAdjustmentOptions(false);
+        
+        // Reset adjustment fields
+        document.getElementById('adjustment-owner-chk').checked = false;
+        document.getElementById('adjustment-customer-chk').checked = false;
+        document.getElementById('adjustment-owner-div').style.display = 'none';
+        document.getElementById('adjustment-customer-div').style.display = 'none';
+        
+        // Clear radio buttons
+        document.querySelectorAll('input[name="adjustment-direction"]').forEach(radio => {
+            radio.checked = false;
+        });
+    }
+    
+    showMessage(containerId, message, type) {
+        const container = document.getElementById(containerId);
+        if (!container) return;
+        
+        container.innerHTML = `<div class="message ${type}">${message}</div>`;
+        setTimeout(() => {
+            container.innerHTML = '';
+        }, 5000);
+    }
+    
     // Modal Methods
     showAdminSettings() {
         const modal = document.getElementById('admin-settings-modal');
-        modal.classList.remove('hidden');
-        
-        // Pre-fill form with current user data
-        document.getElementById('admin-username').value = this.currentUser.username;
-        document.getElementById('admin-email').value = this.currentUser.email;
+        if (modal) {
+            modal.classList.remove('hidden');
+            
+            const adminUsernameEl = document.getElementById('admin-username');
+            if (adminUsernameEl) adminUsernameEl.value = this.currentUser.username;
+            
+            const adminEmailEl = document.getElementById('admin-email');
+            if (adminEmailEl) adminEmailEl.value = this.currentUser.email;
+        }
     }
-
+    
     hideAdminSettings() {
         const modal = document.getElementById('admin-settings-modal');
-        modal.classList.add('hidden');
-        
-        // Clear form
-        document.getElementById('admin-settings-form').reset();
-    }
-
-    showAddTransaction() {
-        const modal = document.getElementById('add-transaction-modal');
-        modal.classList.remove('hidden');
-    }
-
-    hideAddTransaction() {
-        const modal = document.getElementById('add-transaction-modal');
-        modal.classList.add('hidden');
-        
-        // Clear form
-        document.getElementById('add-transaction-form').reset();
-    }
-
-    showUpdateBalance() {
-        const modal = document.getElementById('update-balance-modal');
-        modal.classList.remove('hidden');
-        
-        // Pre-fill with current balance
-        document.getElementById('usd-balance-input').value = this.formatCurrency(0, 'USD').replace(/[$,]/g, '');
-        document.getElementById('ugx-balance-input').value = 0;
-    }
-
-    hideUpdateBalance() {
-        const modal = document.getElementById('update-balance-modal');
-        modal.classList.add('hidden');
-        
-        // Clear form
-        document.getElementById('update-balance-form').reset();
-    }
-
-    showEditTransaction() {
-        const modal = document.getElementById('edit-transaction-modal');
-        modal.classList.remove('hidden');
-    }
-
-    hideEditTransaction() {
-        const modal = document.getElementById('edit-transaction-modal');
-        modal.classList.add('hidden');
-        this.editingTransaction = null;
-        
-        // Clear form
-        document.getElementById('edit-transaction-form').reset();
-    }
-
-    showAddCurrency() {
-        const modal = document.getElementById('add-currency-modal');
-        modal.classList.remove('hidden');
-    }
-
-    hideAddCurrency() {
-        const modal = document.getElementById('add-currency-modal');
-        modal.classList.add('hidden');
-        
-        // Clear form
-        document.getElementById('add-currency-form').reset();
-    }
-
-    showGenerateReport() {
-        const modal = document.getElementById('generate-report-modal');
-        modal.classList.remove('hidden');
-        
-        // Set default dates (last 30 days)
-        const endDate = new Date();
-        const startDate = new Date();
-        startDate.setDate(startDate.getDate() - 30);
-        
-        document.getElementById('report-start-date').value = startDate.toISOString().split('T')[0];
-        document.getElementById('report-end-date').value = endDate.toISOString().split('T')[0];
-    }
-
-    hideGenerateReport() {
-        const modal = document.getElementById('generate-report-modal');
-        modal.classList.add('hidden');
-        
-        // Clear form
-        document.getElementById('generate-report-form').reset();
-    }
-
-    // Enhanced exchange calculator
-    updateExchangeCalculator() {
-        const fromAmount = parseFloat(document.getElementById('from-amount').value) || 0;
-        const fromCurrency = document.getElementById('from-currency').value;
-        const toCurrency = document.getElementById('to-currency').value;
-        
-        if (fromAmount > 0 && fromCurrency && toCurrency) {
-            const exchangeCalc = this.calculateExchange(fromAmount, fromCurrency, toCurrency, 2.0);
+        if (modal) {
+            modal.classList.add('hidden');
             
-            document.getElementById('to-amount').value = exchangeCalc.toAmount.toFixed(4);
-            document.getElementById('current-rate').textContent = exchangeCalc.rate.toFixed(4);
-            document.getElementById('calculated-profit').textContent = this.formatCurrency(exchangeCalc.profitUSD, 'USD');
-        } else {
-            document.getElementById('to-amount').value = '';
-            document.getElementById('current-rate').textContent = '0.00';
-            document.getElementById('calculated-profit').textContent = '$0.00';
+            const adminSettingsForm = document.getElementById('admin-settings-form');
+            if (adminSettingsForm) adminSettingsForm.reset();
         }
     }
-
-    // Enhanced transaction form calculator
-    updateTransactionCalculator(formPrefix = '') {
-        const prefix = formPrefix ? formPrefix + '-' : '';
-        const fromAmount = parseFloat(document.getElementById(prefix + 'from-amount-tx').value) || 0;
-        const fromCurrency = document.getElementById(prefix + 'from-currency-tx').value;
-        const toCurrency = document.getElementById(prefix + 'to-currency-tx').value;
-        const profitMargin = parseFloat(document.getElementById(prefix + 'profit-margin-tx').value) || 2.0;
-        
-        if (fromAmount > 0 && fromCurrency && toCurrency) {
-            const exchangeCalc = this.calculateExchange(fromAmount, fromCurrency, toCurrency, profitMargin);
-            
-            document.getElementById(prefix + 'to-amount-tx').value = exchangeCalc.toAmount.toFixed(4);
-            document.getElementById(prefix + 'exchange-rate-tx').value = exchangeCalc.rate.toFixed(4);
-            document.getElementById(prefix + 'expected-profit-tx').textContent = this.formatCurrency(exchangeCalc.profitUSD, 'USD');
-        }
+    
+    // Utility Methods
+    getDaysRemaining() {
+        if (!this.currentUser?.subscriptionEnd) return 'N/A';
+        const days = Math.max(0, Math.ceil((new Date(this.currentUser.subscriptionEnd).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)));
+        return `${days} days`;
     }
-
-    // Enhanced Multi-Currency Utility Methods
-    formatCurrency(amount, currency) {
-        const currencyInfo = this.currencies[currency];
-        if (!currencyInfo) return `${amount}`;
-        
-        if (['USD', 'EUR', 'GBP'].includes(currency)) {
-            return new Intl.NumberFormat('en-US', {
-                style: 'currency',
-                currency: currency,
-            }).format(amount);
-        }
-        
-        return `${currencyInfo.symbol} ${new Intl.NumberFormat().format(amount)}`;
+    
+    getDaysRemainingForClient(subscriptionEnd) {
+        if (!subscriptionEnd) return 'Payment pending';
+        const days = Math.max(0, Math.ceil((new Date(subscriptionEnd).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)));
+        return `${days} days`;
     }
-
-    // Calculate exchange amount with realistic rates
-    calculateExchange(fromAmount, fromCurrency, toCurrency, profitMargin = 2.0) {
-        const baseRate = this.exchangeRates[fromCurrency]?.[toCurrency] || 1;
-        const adjustedRate = baseRate * (1 + profitMargin / 100);
-        const toAmount = fromAmount * adjustedRate;
-        const profit = (toAmount - (fromAmount * baseRate)) * 0.5; // 50% of margin as profit
-        
-        return {
-            toAmount: parseFloat(toAmount.toFixed(4)),
-            rate: parseFloat(adjustedRate.toFixed(4)),
-            profit: parseFloat(profit.toFixed(4)),
-            profitUSD: toCurrency === 'USD' ? profit : profit / (this.exchangeRates[toCurrency]?.['USD'] || 1)
-        };
+    
+    generateId(prefix = 'id') {
+        return `${prefix}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     }
-
-    // Format full date and time
-    formatDateTime(date) {
-        return new Date(date).toLocaleString('en-US', {
-            year: 'numeric',
-            month: '2-digit',
-            day: '2-digit',
-            hour: '2-digit',
-            minute: '2-digit',
-            second: '2-digit',
-            hour12: false
-        });
-    }
-
-    // Copy to clipboard utility
+    
     copyToClipboard(text) {
         navigator.clipboard.writeText(text).then(() => {
             this.showToast('Success', 'Copied to clipboard!', 'success');
@@ -797,29 +1681,21 @@ class CashBookApp {
             this.showToast('Error', 'Failed to copy to clipboard', 'error');
         });
     }
-
-    getDaysRemaining() {
-        if (!this.currentUser?.subscriptionEnd) return 'N/A';
-        const days = Math.max(0, Math.ceil((new Date(this.currentUser.subscriptionEnd).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)));
-        return `${days} days`;
-    }
-
-    getDaysRemainingForClient(subscriptionEnd) {
-        if (!subscriptionEnd) return 'Payment pending';
-        const days = Math.max(0, Math.ceil((new Date(subscriptionEnd).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)));
-        return `${days} days`;
-    }
-
+    
     showLoading() {
-        document.getElementById('loading-overlay').classList.remove('hidden');
+        const loadingOverlay = document.getElementById('loading-overlay');
+        if (loadingOverlay) loadingOverlay.classList.remove('hidden');
     }
-
+    
     hideLoading() {
-        document.getElementById('loading-overlay').classList.add('hidden');
+        const loadingOverlay = document.getElementById('loading-overlay');
+        if (loadingOverlay) loadingOverlay.classList.add('hidden');
     }
-
+    
     showToast(title, message, type = 'success') {
         const container = document.getElementById('toast-container');
+        if (!container) return;
+        
         const toast = document.createElement('div');
         toast.className = `toast ${type}`;
         
@@ -833,360 +1709,342 @@ class CashBookApp {
         
         container.appendChild(toast);
         
-        // Auto remove after 5 seconds
         setTimeout(() => {
             if (toast.parentNode) {
                 toast.parentNode.removeChild(toast);
             }
         }, 5000);
         
-        // Manual close
-        toast.querySelector('.toast-close').addEventListener('click', () => {
-            if (toast.parentNode) {
-                toast.parentNode.removeChild(toast);
-            }
-        });
+        const toastCloseBtn = toast.querySelector('.toast-close');
+        if (toastCloseBtn) {
+            toastCloseBtn.addEventListener('click', () => {
+                if (toast.parentNode) {
+                    toast.parentNode.removeChild(toast);
+                }
+            });
+        }
     }
-
+    
     // Event Listeners
     setupEventListeners() {
-        // Login form
-        document.getElementById('login-form').addEventListener('submit', (e) => {
+        this.setupGlobalEventListeners();
+        this.setupPageSpecificEventListeners();
+        this.setupModalEventListeners();
+        this.setupAdjustmentEventListeners();
+    }
+    
+    setupGlobalEventListeners() {
+        this.safeAddEventListener('#logout-btn', 'click', () => this.logout());
+        
+        this.safeAddEventListener('#show-register', 'click', (e) => {
             e.preventDefault();
-            const username = document.getElementById('login-username').value;
-            const password = document.getElementById('login-password').value;
-            this.login(username, password);
+            this.showRegister();
         });
-
-        // Register form
-        document.getElementById('register-form').addEventListener('submit', (e) => {
+        
+        this.safeAddEventListener('#show-login', 'click', (e) => {
             e.preventDefault();
-            const formData = {
-                businessName: document.getElementById('business-name').value,
-                fullName: document.getElementById('full-name').value,
-                username: document.getElementById('username').value,
-                email: document.getElementById('email').value,
-                phone: document.getElementById('phone').value,
-                password: document.getElementById('password').value,
-                confirmPassword: document.getElementById('confirm-password').value,
-            };
+            this.showLogin();
+        });
+        
+        this.safeAddEventListener('#show-forgot-password', 'click', (e) => {
+            e.preventDefault();
+            this.showPage('forgot-password-page');
+        });
+        
+        this.safeAddEventListener('#back-to-login', 'click', (e) => {
+            e.preventDefault();
+            this.showLogin();
+        });
+        
+        this.safeAddEventListener('#back-to-dashboard', 'click', () => {
+            this.showDashboard();
+        });
+        
+        this.safeAddEventListener('#open-money-exchanger-btn', 'click', () => {
+            this.openMoneyExchanger();
+        });
+        
+        this.safeAddEventListener('#close-money-exchanger', 'click', () => {
+            this.closeMoneyExchanger();
+        });
+        
+        this.safeAddEventListener('#add-owner-btn', 'click', () => {
+            this.addOwner();
+        });
+        
+        this.safeAddEventListener('#add-new-transaction-btn', 'click', () => {
+            this.addNewPersonTransaction();
+        });
+        
+        // Report generation buttons
+        this.safeAddEventListener('#generate-pdf-report', 'click', () => {
+            const startDate = document.getElementById('report-start-date').value;
+            const endDate = document.getElementById('report-end-date').value;
             
-            if (formData.password !== formData.confirmPassword) {
-                this.showToast('Error', 'Passwords do not match', 'error');
+            if (!startDate || !endDate) {
+                this.showToast('Error', 'Please select both start and end dates', 'error');
                 return;
             }
             
-            this.register(formData);
+            this.generatePDFReport(startDate, endDate);
         });
-
-        // Forgot password form
-        document.getElementById('forgot-password-form').addEventListener('submit', (e) => {
-            e.preventDefault();
-            const email = document.getElementById('reset-email').value;
-            this.forgotPassword(email);
-        });
-
-        // Reset password form
-        document.getElementById('reset-password-form').addEventListener('submit', (e) => {
-            e.preventDefault();
-            const formData = {
-                email: document.getElementById('reset-email').value,
-                code: document.getElementById('reset-code').value,
-                newPassword: document.getElementById('new-password').value,
-                confirmPassword: document.getElementById('confirm-new-password').value,
-            };
+        
+        this.safeAddEventListener('#generate-excel-report', 'click', () => {
+            const startDate = document.getElementById('report-start-date').value;
+            const endDate = document.getElementById('report-end-date').value;
             
-            if (formData.newPassword !== formData.confirmPassword) {
-                this.showToast('Error', 'Passwords do not match', 'error');
+            if (!startDate || !endDate) {
+                this.showToast('Error', 'Please select both start and end dates', 'error');
                 return;
             }
             
-            this.resetPassword(formData);
+            this.generateExcelReport(startDate, endDate);
         });
-
-        // Admin settings form
-        document.getElementById('admin-settings-form').addEventListener('submit', (e) => {
-            e.preventDefault();
-            const formData = {
-                username: document.getElementById('admin-username').value,
-                email: document.getElementById('admin-email').value,
-                currentPassword: document.getElementById('admin-current-password').value,
-                newPassword: document.getElementById('admin-new-password').value,
-                confirmPassword: document.getElementById('admin-confirm-password').value,
-            };
+        
+        // Modal report buttons
+        this.safeAddEventListener('#modal-generate-pdf-report', 'click', () => {
+            const startDate = document.getElementById('modal-report-start-date').value;
+            const endDate = document.getElementById('modal-report-end-date').value;
             
-            if (formData.newPassword && formData.newPassword !== formData.confirmPassword) {
-                this.showToast('Error', 'New passwords do not match', 'error');
+            if (!startDate || !endDate) {
+                this.showToast('Error', 'Please select both start and end dates', 'error');
                 return;
             }
             
-            this.updateAdminSettings(formData);
+            this.generatePDFReport(startDate, endDate);
         });
-
-        // Add transaction form
-        document.getElementById('add-transaction-form').addEventListener('submit', (e) => {
-            e.preventDefault();
-            const formData = {
-                customerName: document.getElementById('customer-name').value,
-                fromCurrency: document.getElementById('from-currency-tx').value,
-                toCurrency: document.getElementById('to-currency-tx').value,
-                fromAmount: parseFloat(document.getElementById('from-amount-tx').value),
-                profitMargin: parseFloat(document.getElementById('profit-margin-tx').value),
-                notes: document.getElementById('notes-tx').value,
-            };
+        
+        this.safeAddEventListener('#modal-generate-excel-report', 'click', () => {
+            const startDate = document.getElementById('modal-report-start-date').value;
+            const endDate = document.getElementById('modal-report-end-date').value;
             
-            this.addTransaction(formData);
+            if (!startDate || !endDate) {
+                this.showToast('Error', 'Please select both start and end dates', 'error');
+                return;
+            }
+            
+            this.generateExcelReport(startDate, endDate);
         });
-
-        // Edit transaction form
-        document.getElementById('edit-transaction-form').addEventListener('submit', (e) => {
+        
+        // Edit transaction modal
+        this.safeAddEventListener('#close-edit-transaction', 'click', () => {
+            this.closeEditTransactionModal();
+        });
+        
+        this.safeAddEventListener('#cancel-edit-transaction', 'click', () => {
+            this.closeEditTransactionModal();
+        });
+        
+        this.safeAddEventListener('#edit-transaction-form', 'submit', (e) => {
             e.preventDefault();
+            
             const formData = {
-                id: document.getElementById('edit-transaction-id').value,
-                customerName: document.getElementById('edit-customer-name').value,
-                fromCurrency: document.getElementById('edit-from-currency').value,
-                toCurrency: document.getElementById('edit-to-currency').value,
-                fromAmount: parseFloat(document.getElementById('edit-from-amount').value),
-                profitMargin: parseFloat(document.getElementById('edit-profit-margin').value),
-                notes: document.getElementById('edit-notes').value,
+                amount: document.getElementById('edit-transaction-amount').value,
+                description: document.getElementById('edit-transaction-description').value,
+                cashType: document.getElementById('edit-transaction-cash-type').value
             };
             
             this.updateTransaction(formData);
         });
-
-        // Add currency form
-        document.getElementById('add-currency-form').addEventListener('submit', (e) => {
-            e.preventDefault();
-            const formData = {
-                currency: document.getElementById('currency-select').value,
-                amount: parseFloat(document.getElementById('currency-amount').value),
-            };
-            
-            this.addCurrency(formData);
+        
+        // Old Person transaction type buttons
+        this.safeAddEventListener('#op-pr-btn', 'click', () => {
+            this.handleOldPersonTransaction('PR');
         });
-
-        // Generate report form
-        document.getElementById('generate-report-form').addEventListener('submit', (e) => {
-            e.preventDefault();
-            const formData = {
-                startDate: document.getElementById('report-start-date').value,
-                endDate: document.getElementById('report-end-date').value,
-                format: document.getElementById('report-format').value,
-                includeProfit: document.getElementById('include-profit').checked,
-                includeCurrency: document.getElementById('include-currency').checked,
-                includeCustomers: document.getElementById('include-customers').checked,
-            };
-            
-            this.generateReport(formData);
+        
+        this.safeAddEventListener('#op-full-btn', 'click', () => {
+            this.handleOldPersonTransaction('Full');
         });
-
-        // Update balance form
-        document.getElementById('update-balance-form').addEventListener('submit', (e) => {
-            e.preventDefault();
-            const formData = {
-                usdBalance: parseFloat(document.getElementById('usd-balance-input').value),
-                ugxBalance: parseFloat(document.getElementById('ugx-balance-input').value),
-            };
-            
-            this.updateBalance(formData);
+        
+        this.safeAddEventListener('#op-debt-btn', 'click', () => {
+            this.handleOldPersonTransaction('Debt');
         });
-
-        // Navigation links
-        document.getElementById('show-register').addEventListener('click', (e) => {
-            e.preventDefault();
-            this.showRegister();
+        
+        // General Entry buttons
+        this.safeAddEventListener('#ge-in-btn', 'click', () => {
+            this.showAdjustmentOptions(false);
+            this.handleGeneralEntry('IN');
         });
-
-        document.getElementById('show-login').addEventListener('click', (e) => {
-            e.preventDefault();
-            this.showLogin();
+        
+        this.safeAddEventListener('#ge-out-btn', 'click', () => {
+            this.showAdjustmentOptions(false);
+            this.handleGeneralEntry('OUT');
         });
-
-        document.getElementById('show-forgot-password').addEventListener('click', (e) => {
-            e.preventDefault();
-            this.showPage('forgot-password-page');
+        
+        // Use event delegation for the adjustment button since it might not be in the DOM initially
+        document.addEventListener('click', (e) => {
+            if (e.target && e.target.id === 'ge-adjustment-btn') {
+                console.log('Adjustment button clicked');
+                this.showAdjustmentOptions(true);
+            }
         });
-
-        document.getElementById('back-to-login').addEventListener('click', (e) => {
-            e.preventDefault();
-            this.showLogin();
+        
+        // Add event listener for the actual adjustment submission button
+        document.addEventListener('click', (e) => {
+            if (e.target && e.target.id === 'ge-adjustment-submit-btn') {
+                console.log('Adjustment submit button clicked');
+                this.handleGeneralEntry('Adjustment');
+            }
         });
-
-        document.getElementById('back-to-forgot').addEventListener('click', (e) => {
-            e.preventDefault();
-            this.showPage('forgot-password-page');
+        
+        // Tab switching
+        document.querySelectorAll('[data-tab]').forEach(tab => {
+            tab.addEventListener('click', (e) => {
+                this.switchTab(e.target.dataset.tab);
+            });
         });
-
-        // Buttons
-        document.getElementById('logout-btn').addEventListener('click', () => {
-            this.logout();
-        });
-
-        document.getElementById('admin-settings-btn').addEventListener('click', () => {
+        
+        // New person transaction checkboxes
+        this.setupCheckboxListeners('np');
+        
+        // Old person transaction checkboxes
+        this.setupCheckboxListeners('op');
+        
+        // Setup old person customer input listeners for balance display
+        this.setupOldPersonCustomerListeners();
+    }
+    
+    setupPageSpecificEventListeners() {
+        if (document.querySelector('#login-page')) {
+            this.safeAddEventListener('#login-form', 'submit', (e) => {
+                e.preventDefault();
+                const username = document.getElementById('login-username').value;
+                const password = document.getElementById('login-password').value;
+                this.login(username, password);
+            });
+        }
+        
+        if (document.querySelector('#register-page')) {
+            this.safeAddEventListener('#register-form', 'submit', (e) => {
+                e.preventDefault();
+                const formData = {
+                    businessName: document.getElementById('business-name').value,
+                    fullName: document.getElementById('full-name').value,
+                    username: document.getElementById('username').value,
+                    email: document.getElementById('email').value,
+                    phone: document.getElementById('phone').value,
+                    password: document.getElementById('password').value,
+                    confirmPassword: document.getElementById('confirm-password').value,
+                };
+                
+                if (formData.password !== formData.confirmPassword) {
+                    this.showToast('Error', 'Passwords do not match', 'error');
+                    return;
+                }
+                
+                this.register(formData);
+            });
+        }
+        
+        if (document.querySelector('#forgot-password-page')) {
+            this.safeAddEventListener('#forgot-password-form', 'submit', (e) => {
+                e.preventDefault();
+                const email = document.getElementById('reset-email').value;
+                this.forgotPassword(email);
+            });
+        }
+        
+        if (document.querySelector('#reset-password-page')) {
+            this.safeAddEventListener('#reset-password-form', 'submit', (e) => {
+                e.preventDefault();
+                const formData = {
+                    email: document.getElementById('reset-email').value,
+                    code: document.getElementById('reset-code').value,
+                    newPassword: document.getElementById('new-password').value,
+                    confirmPassword: document.getElementById('confirm-new-password').value,
+                };
+                
+                if (formData.newPassword !== formData.confirmPassword) {
+                    this.showToast('Error', 'Passwords do not match', 'error');
+                    return;
+                }
+                
+                this.resetPassword(formData);
+            });
+        }
+        
+        if (document.querySelector('#owner-dashboard')) {
+            this.setupOwnerDashboardListeners();
+        }
+    }
+    
+    setupOwnerDashboardListeners() {
+        this.safeAddEventListener('#admin-settings-btn', 'click', () => {
             this.showAdminSettings();
         });
-
-        document.getElementById('add-transaction-btn').addEventListener('click', () => {
-            this.showAddTransaction();
-        });
-
-        document.getElementById('update-balance-btn').addEventListener('click', () => {
-            this.showUpdateBalance();
-        });
-
-        document.getElementById('reset-profit-btn').addEventListener('click', () => {
-            this.resetTodayProfit();
-        });
-
-        document.getElementById('add-currency-btn').addEventListener('click', () => {
-            this.showAddCurrency();
-        });
-
-        document.getElementById('generate-report-btn').addEventListener('click', () => {
-            this.showGenerateReport();
-        });
-
-        document.getElementById('back-to-dashboard').addEventListener('click', () => {
-            this.showDashboard();
-        });
-
-        // Modal controls
-        document.getElementById('close-admin-settings').addEventListener('click', () => {
-            this.hideAdminSettings();
-        });
-
-        document.getElementById('cancel-admin-settings').addEventListener('click', () => {
-            this.hideAdminSettings();
-        });
-
-        document.getElementById('close-add-transaction').addEventListener('click', () => {
-            this.hideAddTransaction();
-        });
-
-        document.getElementById('cancel-add-transaction').addEventListener('click', () => {
-            this.hideAddTransaction();
-        });
-
-        document.getElementById('close-update-balance').addEventListener('click', () => {
-            this.hideUpdateBalance();
-        });
-
-        document.getElementById('cancel-update-balance').addEventListener('click', () => {
-            this.hideUpdateBalance();
-        });
-
-        // Edit transaction modal controls
-        document.getElementById('close-edit-transaction').addEventListener('click', () => {
-            this.hideEditTransaction();
-        });
-
-        document.getElementById('cancel-edit-transaction').addEventListener('click', () => {
-            this.hideEditTransaction();
-        });
-
-        // Add currency modal controls
-        document.getElementById('close-add-currency').addEventListener('click', () => {
-            this.hideAddCurrency();
-        });
-
-        document.getElementById('cancel-add-currency').addEventListener('click', () => {
-            this.hideAddCurrency();
-        });
-
-        // Generate report modal controls
-        document.getElementById('close-generate-report').addEventListener('click', () => {
-            this.hideGenerateReport();
-        });
-
-        document.getElementById('cancel-generate-report').addEventListener('click', () => {
-            this.hideGenerateReport();
-        });
-
-        // Modal overlay clicks
-        document.querySelector('#admin-settings-modal .modal-overlay').addEventListener('click', () => {
-            this.hideAdminSettings();
-        });
-
-        document.querySelector('#add-transaction-modal .modal-overlay').addEventListener('click', () => {
-            this.hideAddTransaction();
-        });
-
-        document.querySelector('#update-balance-modal .modal-overlay').addEventListener('click', () => {
-            this.hideUpdateBalance();
-        });
-
-        document.querySelector('#edit-transaction-modal .modal-overlay').addEventListener('click', () => {
-            this.hideEditTransaction();
-        });
-
-        document.querySelector('#add-currency-modal .modal-overlay').addEventListener('click', () => {
-            this.hideAddCurrency();
-        });
-
-        document.querySelector('#generate-report-modal .modal-overlay').addEventListener('click', () => {
-            this.hideGenerateReport();
-        });
-
-        // Enhanced calculator event listeners
-        document.getElementById('from-amount').addEventListener('input', () => {
-            this.updateExchangeCalculator();
-        });
-
-        document.getElementById('from-currency').addEventListener('change', () => {
-            this.updateExchangeCalculator();
-        });
-
-        document.getElementById('to-currency').addEventListener('change', () => {
-            this.updateExchangeCalculator();
-        });
-
-        // Transaction form calculators
-        document.getElementById('from-amount-tx').addEventListener('input', () => {
-            this.updateTransactionCalculator();
-        });
-
-        document.getElementById('from-currency-tx').addEventListener('change', () => {
-            this.updateTransactionCalculator();
-        });
-
-        document.getElementById('to-currency-tx').addEventListener('change', () => {
-            this.updateTransactionCalculator();
-        });
-
-        document.getElementById('profit-margin-tx').addEventListener('input', () => {
-            this.updateTransactionCalculator();
-        });
-
-        // Edit transaction form calculators
-        document.getElementById('edit-from-amount').addEventListener('input', () => {
-            this.updateTransactionCalculator('edit');
-        });
-
-        document.getElementById('edit-from-currency').addEventListener('change', () => {
-            this.updateTransactionCalculator('edit');
-        });
-
-        document.getElementById('edit-to-currency').addEventListener('change', () => {
-            this.updateTransactionCalculator('edit');
-        });
-
-        document.getElementById('edit-profit-margin').addEventListener('input', () => {
-            this.updateTransactionCalculator('edit');
-        });
-
-        // Search and filter
-        document.getElementById('search-clients').addEventListener('input', (e) => {
-            this.filterClients();
-        });
-
-        document.getElementById('status-filter').addEventListener('change', (e) => {
-            this.filterClients();
-        });
+        
+        this.safeAddEventListener('#search-clients', 'input', () => this.filterClients());
+        this.safeAddEventListener('#status-filter', 'change', () => this.filterClients());
     }
-
+    
+    setupModalEventListeners() {
+        if (document.querySelector('#admin-settings-modal')) {
+            this.safeAddEventListener('#admin-settings-form', 'submit', (e) => {
+                e.preventDefault();
+                const formData = {
+                    username: document.getElementById('admin-username').value,
+                    email: document.getElementById('admin-email').value,
+                    currentPassword: document.getElementById('admin-current-password').value,
+                    newPassword: document.getElementById('admin-new-password').value,
+                    confirmPassword: document.getElementById('admin-confirm-password').value,
+                };
+                
+                if (formData.newPassword && formData.newPassword !== formData.confirmPassword) {
+                    this.showToast('Error', 'New passwords do not match', 'error');
+                    return;
+                }
+                
+                this.updateAdminSettings(formData);
+            });
+            
+            this.safeAddEventListener('#close-admin-settings', 'click', () => this.hideAdminSettings());
+            this.safeAddEventListener('#cancel-admin-settings', 'click', () => this.hideAdminSettings());
+            this.safeAddEventListener('#admin-settings-modal .modal-overlay', 'click', () => this.hideAdminSettings());
+        }
+    }
+    
+    setupAdjustmentEventListeners() {
+        // Setup adjustment checkboxes
+        const adjustmentOwnerChk = document.getElementById('adjustment-owner-chk');
+        const adjustmentCustomerChk = document.getElementById('adjustment-customer-chk');
+        
+        if (adjustmentOwnerChk) {
+            adjustmentOwnerChk.addEventListener('change', () => {
+                this.handleAdjustmentCheckboxChange('owner');
+            });
+        }
+        
+        if (adjustmentCustomerChk) {
+            adjustmentCustomerChk.addEventListener('change', () => {
+                this.handleAdjustmentCheckboxChange('customer');
+            });
+        }
+    }
+    
+    handleAdjustmentCheckboxChange(type) {
+        const otherType = type === 'owner' ? 'customer' : 'owner';
+        const checkbox = document.getElementById(`adjustment-${type}-chk`);
+        const otherCheckbox = document.getElementById(`adjustment-${otherType}-chk`);
+        const div = document.getElementById(`adjustment-${type}-div`);
+        const otherDiv = document.getElementById(`adjustment-${otherType}-div`);
+        
+        if (checkbox.checked) {
+            div.style.display = 'block';
+            otherCheckbox.checked = false;
+            otherDiv.style.display = 'none';
+        } else {
+            div.style.display = 'none';
+        }
+    }
+    
     async filterClients() {
-        const searchTerm = document.getElementById('search-clients').value;
-        const statusFilter = document.getElementById('status-filter').value;
+        const searchClientsEl = document.getElementById('search-clients');
+        const statusFilterEl = document.getElementById('status-filter');
+        
+        if (!searchClientsEl || !statusFilterEl) return;
+        
+        const searchTerm = searchClientsEl.value;
+        const statusFilter = statusFilterEl.value;
         
         try {
             const clients = await this.apiCall('/api/owner/clients', 'GET');
@@ -1212,7 +2070,6 @@ class CashBookApp {
         }
     }
 }
-
 // Initialize the app when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
     window.app = new CashBookApp();

@@ -4,7 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CashBook Pro - Money Changer Management</title>
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="style.css"> 
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 </head>
 <body>
     <div id="app">
@@ -22,7 +24,7 @@
                 </div>
             </div>
         </nav>
-
+        
         <!-- Login Page -->
         <div id="login-page" class="page">
             <div class="auth-container">
@@ -55,7 +57,7 @@
                 </div>
             </div>
         </div>
-
+        
         <!-- Register Page -->
         <div id="register-page" class="page hidden">
             <div class="auth-container">
@@ -111,7 +113,7 @@
                 </div>
             </div>
         </div>
-
+        
         <!-- Forgot Password Page -->
         <div id="forgot-password-page" class="page hidden">
             <div class="auth-container">
@@ -137,7 +139,7 @@
                 </div>
             </div>
         </div>
-
+        
         <!-- Reset Password Page -->
         <div id="reset-password-page" class="page hidden">
             <div class="auth-container">
@@ -173,7 +175,7 @@
                 </div>
             </div>
         </div>
-
+        
         <!-- Payment Page -->
         <div id="payment-page" class="page hidden">
             <div class="container">
@@ -200,13 +202,31 @@
                             
                             <div class="payment-instructions">
                                 <h3>Payment Instructions</h3>
-                                <p>Send payment via WhatsApp to:</p>
+                                
+                                <!-- Payment Number -->
+                                <p><strong>Send your payment ONLY to the official payment number below:</strong></p>
                                 <div class="whatsapp-number">
-                                    <strong>+256 700 123 456</strong>
-                                    <button class="btn-copy" onclick="app.copyToClipboard('+256700123456')">Copy</button>
+                                    <label>Payment Number:</label><br>
+                                    <strong>+252 0771351394</strong>
+                                    <button class="btn-copy" onclick="app.copyToClipboard('+2520771351394')">Copy</button>
                                 </div>
-                                <p>Include your email address in the payment message for verification.</p>
-                                <p>Your account will be activated within 24 hours of payment confirmation.</p>
+                                
+                                <!-- Contact Number -->
+                                <p>If you need any assistance after sending the payment, please contact the owner at:</p>
+                                <div class="whatsapp-number">
+                                    <label>Contact Number:</label><br>
+                                    <strong>+252 661142158</strong>
+                                    <button class="btn-copy" onclick="app.copyToClipboard('+252661142158')">Copy</button>
+                                </div>
+                                
+                                <!-- Warning -->
+                                <div class="warning-box" style="color: red; font-weight: bold; margin-top: 15px;">
+                                    ⚠️ IMPORTANT: Do NOT send money to the contact number. Payments are only accepted via the official payment number listed above.
+                                </div>
+                                <p style="margin-top: 10px;">
+                                    Include your email address in the payment message for verification.<br>
+                                    Your account will be activated within 24 hours of payment confirmation.
+                                </p>
                             </div>
                             
                             <div class="payment-actions">
@@ -217,7 +237,7 @@
                 </div>
             </div>
         </div>
-
+        
         <!-- Owner Dashboard -->
         <div id="owner-dashboard" class="page hidden">
             <div class="container">
@@ -293,131 +313,432 @@
                 </div>
             </div>
         </div>
-
+        
         <!-- Client Dashboard -->
         <div id="client-dashboard" class="page hidden">
             <div class="container">
                 <div class="dashboard-header">
-                    <h1>Client Dashboard</h1>
-                    <p>Manage your money exchange operations</p>
+                    <h1>CashBook Pro</h1>
+                    <p>Manage your CashBook Pro operations</p>
                     <div class="account-info">
-                        <span>Status: <span id="current-status" class="status-badge">Active</span></span>
-                        <span>Expires: <span id="subscription-end">N/A</span></span>
-                        <span>Remaining: <span id="days-remaining">N/A</span></span>
+                        <span>Owner: <span id="current-owner" class="status-badge active"></span></span>
+                        <span>Balance: $<span id="owner-balance">0.00</span></span>
+                        <span class="account-status">
+                            Status: <span id="account-status" class="status-badge"></span>
+                        </span>
+                        <span class="account-expiry">
+                            Expires: <span id="expiry-date"></span>
+                        </span>
                     </div>
                 </div>
                 
-                <div class="dashboard-grid">
-                    <!-- Today's Profit Panel -->
-                    <div class="dashboard-card">
-                        <div class="card-header">
-                            <h3>Today's Profit</h3>
-                            <button id="reset-profit-btn" class="btn-action btn-reset">Reset</button>
-                        </div>
-                        <div class="card-content">
-                            <div class="profit-amount" id="today-profit">$0.00</div>
-                            <div class="profit-transactions">
-                                <span id="transaction-count">0</span> transactions today
+                <!-- Money Exchanger System Panel -->
+                <div class="dashboard-card">
+                    <div class="card-header">
+                        
+                        <button id="open-money-exchanger-btn" class="btn-action btn-primary">Open System</button>
+                    </div>
+                    <div class="card-content">
+                        <p>Manage CashBook Pro operations with customers and track transactions.</p>
+                        <div class="stats-row">
+                            <div class="stat-item">
+                                <div class="stat-label">Active Customers</div>
+                                <div class="stat-value" id="active-customers-count">0</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-label">Today's Transactions</div>
+                                <div class="stat-value" id="today-transactions-count">0</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-label">System Balance</div>
+                                <div class="stat-value" id="system-balance">$0.00</div>
                             </div>
                         </div>
-                    </div>
-                    
-                    <!-- Multi-Currency Balance Panel -->
-                    <div class="dashboard-card">
-                        <div class="card-header">
-                            <h3>Currency Balances</h3>
-                            <button id="add-currency-btn" class="btn-action btn-add">Add Currency</button>
-                        </div>
-                        <div class="card-content">
-                            <div id="currency-balances" class="currency-grid">
-                                <!-- Currency balances will be populated here -->
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <!-- Exchange Operations -->
-                    <div class="dashboard-card">
-                        <div class="card-header">
-                            <h3>Exchange Operations</h3>
-                            <button id="add-transaction-btn" class="btn-action btn-primary">New Exchange</button>
-                        </div>
-                        <div class="card-content">
-                            <div class="exchange-calculator">
-                                <div class="calc-row">
-                                    <select id="from-currency" class="currency-select">
-                                        <option value="USD">USD - US Dollar</option>
-                                        <option value="EUR">EUR - Euro</option>
-                                        <option value="GBP">GBP - British Pound</option>
-                                        <option value="UGX">UGX - Ugandan Shilling</option>
-                                        <option value="SOS">SOS - Somali Shilling</option>
-                                        <option value="KES">KES - Kenyan Shilling</option>
-                                        <option value="ETB">ETB - Ethiopian Birr</option>
-                                        <option value="DJF">DJF - Djibouti Franc</option>
-                                        <option value="ERN">ERN - Eritrean Nakfa</option>
-                                        <option value="SDG">SDG - Sudanese Pound</option>
-                                    </select>
-                                    <input type="number" id="from-amount" placeholder="0.00" step="0.01">
+                        <div class="reports-section">
+                            <h3>Generate Reports</h3>
+                            <div class="report-controls">
+                                <div class="form-group">
+                                    <label for="report-start-date">From Date</label>
+                                    <input type="date" id="report-start-date">
                                 </div>
-                                <div class="calc-arrow">⇄</div>
-                                <div class="calc-row">
-                                    <select id="to-currency" class="currency-select">
-                                        <option value="UGX">UGX - Ugandan Shilling</option>
-                                        <option value="USD">USD - US Dollar</option>
-                                        <option value="EUR">EUR - Euro</option>
-                                        <option value="GBP">GBP - British Pound</option>
-                                        <option value="SOS">SOS - Somali Shilling</option>
-                                        <option value="KES">KES - Kenyan Shilling</option>
-                                        <option value="ETB">ETB - Ethiopian Birr</option>
-                                        <option value="DJF">DJF - Djibouti Franc</option>
-                                        <option value="ERN">ERN - Eritrean Nakfa</option>
-                                        <option value="SDG">SDG - Sudanese Pound</option>
-                                    </select>
-                                    <input type="number" id="to-amount" placeholder="0.00" step="0.01" readonly>
+                                <div class="form-group">
+                                    <label for="report-end-date">To Date</label>
+                                    <input type="date" id="report-end-date">
                                 </div>
-                                <div class="calc-info">
-                                    <div>Rate: <span id="current-rate">0.00</span></div>
-                                    <div>Profit: <span id="calculated-profit">$0.00</span></div>
+                                <div class="form-group">
+                                    <button id="generate-pdf-report" class="btn-action btn-primary">Generate PDF</button>
+                                    <button id="generate-excel-report" class="btn-action btn-secondary">Generate Excel</button>
                                 </div>
                             </div>
                         </div>
-                    </div>
-                </div>
-                
-                <!-- Transactions Section -->
-                <div class="transactions-section">
-                    <div class="section-header">
-                        <h2>Transaction History</h2>
-                        <div class="section-actions">
-                            <button id="generate-report-btn" class="btn-action btn-secondary">Generate Report</button>
-                            <input type="text" id="search-transactions" placeholder="Search transactions..." class="search-input">
-                            <input type="date" id="date-filter" class="date-filter">
-                        </div>
-                    </div>
-                    
-                    <div class="table-container">
-                        <table class="data-table">
-                            <thead>
-                                <tr>
-                                    <th>Date & Time</th>
-                                    <th>Customer</th>
-                                    <th>Type</th>
-                                    <th>From Amount</th>
-                                    <th>Rate</th>
-                                    <th>To Amount</th>
-                                    <th>Profit</th>
-                                    <th>Notes</th>
-                                    <th>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody id="transactions-tbody">
-                                <!-- Transaction rows will be populated here -->
-                            </tbody>
-                        </table>
                     </div>
                 </div>
             </div>
         </div>
-
+        
+        <!-- Money Exchanger System Modal -->
+        <div id="money-exchanger-modal" class="modal hidden">
+            <div class="modal-overlay"></div>
+            <div class="modal-content large-modal">
+                <div class="modal-header">
+                    <h2>Money Exchanger System</h2>
+                    <div class="header-info">
+                        <span>Owner: <strong id="modal-owner-name"></strong></span>
+                        <span>Balance: $<strong id="modal-owner-balance">0.00</strong></span>
+                        <span>Status: <strong id="modal-account-status" class="status-badge"></strong></span>
+                        <span>Expires: <strong id="modal-expiry-date"></strong></span>
+                    </div>
+                    <button id="close-money-exchanger" class="modal-close">&times;</button>
+                </div>
+                
+                <div class="modal-body">
+                    <!-- Owners Management -->
+                    <div class="section-card">
+                        <div class="section-header">
+                            <h3>Owners Management</h3>
+                        </div>
+                        <div class="section-content">
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <input type="text" id="new-owner-name" placeholder="Add Owner Name">
+                                </div>
+                                <div class="form-group">
+                                    <button id="add-owner-btn" class="btn-primary">Add Owner</button>
+                                </div>
+                            </div>
+                            <div class="info-box">
+                                <!-- <strong>Existing Owners:</strong> <span id="owners-list">None</span> -->
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Transaction Tabs -->
+                    <div class="section-card">
+                        <div class="section-header">
+                            <h3>Transactions</h3>
+                        </div>
+                        <div class="tabs">
+                            <button class="tab-btn active" data-tab="new-person-tab">New Person</button>
+                            <button class="tab-btn" data-tab="old-person-tab">Old Person</button>
+                            <button class="tab-btn" data-tab="general-entry-tab">General Entry</button>
+                            <button class="tab-btn" data-tab="all-transactions-tab">All Transactions</button>
+                        </div>
+                        
+                        <!-- Tab Contents -->
+                        <div class="tab-contents">
+                            <!-- New Person Tab -->
+                            <div id="new-person-tab" class="tab-content active">
+                                <h3>New Person Transaction</h3>
+                                <p><strong>Instructions:</strong> Select who is giving money (Payer) and who is receiving money (Payee)</p>
+                                
+                                <div class="transaction-form">
+                                    <div class="form-row">
+                                        <div class="form-group">
+                                            <h4>Payer (Who is giving money)</h4>
+                                            <div class="checkbox-group">
+                                                <label><input type="checkbox" id="np-payer-owner-chk"> Owner (Existing)</label>
+                                                <label><input type="checkbox" id="np-payer-customer-chk"> Customer (New)</label>
+                                            </div>
+                                            <div id="np-payer-owner-div" class="conditional-div" style="display:none;">
+                                                <select id="np-payer-owner-select">
+                                                    <option value="">Select Owner</option>
+                                                </select>
+                                            </div>
+                                            <div id="np-payer-customer-div" class="conditional-div" style="display:none;">
+                                                <input type="text" id="np-payer-customer-name" placeholder="New Customer Name (Payer)">
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="form-group">
+                                            <h4>Payee (Who is receiving money)</h4>
+                                            <div class="checkbox-group">
+                                                <label><input type="checkbox" id="np-payee-owner-chk"> Owner (Existing)</label>
+                                                <label><input type="checkbox" id="np-payee-customer-chk"> Customer (New)</label>
+                                            </div>
+                                            <div id="np-payee-owner-div" class="conditional-div" style="display:none;">
+                                                <select id="np-payee-owner-select">
+                                                    <option value="">Select Owner</option>
+                                                </select>
+                                            </div>
+                                            <div id="np-payee-customer-div" class="conditional-div" style="display:none;">
+                                                <input type="text" id="np-payee-customer-name" placeholder="New Customer Name (Payee)">
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="form-row">
+                                        <div class="form-group">
+                                            <label for="np-amount">Amount</label>
+                                            <input type="number" id="np-amount" placeholder="0.00" step="0.01">
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="np-cash-type">Cash Type</label>
+                                            <select id="np-cash-type">
+                                                <option value="">Select Cash Type</option>
+                                                <option value="USD">USD</option>
+                                                <option value="EUR">EUR</option>
+                                                <option value="GBP">GBP</option>
+                                                <option value="UGX">UGX</option>
+                                                <option value="KES">KES</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="form-group">
+                                        <label for="np-desc">Description</label>
+                                        <input type="text" id="np-desc" placeholder="Transaction description">
+                                    </div>
+                                    
+                                    <button id="add-new-transaction-btn" class="btn-primary">Add Transaction</button>
+                                    <div id="np-message" class="message-container"></div>
+                                </div>
+                            </div>
+                            
+                            <!-- Old Person Tab -->
+                            <div id="old-person-tab" class="tab-content">
+                                <h3>Old Person Transaction</h3>
+                                <p><strong>Instructions:</strong> Select existing payer and payee, then choose transaction type</p>
+                                
+                                <div class="transaction-form">
+                                    <div class="form-row">
+                                        <div class="form-group">
+                                            <h4>Payer (Who is giving money)</h4>
+                                            <div class="checkbox-group">
+                                                <label><input type="checkbox" id="op-payer-owner-chk"> Owner (Existing)</label>
+                                                <label><input type="checkbox" id="op-payer-customer-chk"> Customer (Existing)</label>
+                                            </div>
+                                            <div id="op-payer-owner-div" class="conditional-div" style="display:none;">
+                                                <select id="op-payer-owner-select">
+                                                    <option value="">Select Owner</option>
+                                                </select>
+                                            </div>
+                                            <div id="op-payer-customer-div" class="conditional-div" style="display:none;">
+                                                <input type="text" id="op-payer-customer-name" placeholder="Select Existing Customer" list="payer-customers-list">
+                                                <datalist id="payer-customers-list"></datalist>
+                                                <div id="op-payer-customer-balance" class="customer-balance" style="display:none;"></div>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="form-group">
+                                            <h4>Payee (Who is receiving money)</h4>
+                                            <div class="checkbox-group">
+                                                <label><input type="checkbox" id="op-payee-owner-chk"> Owner (Existing)</label>
+                                                <label><input type="checkbox" id="op-payee-customer-chk"> Customer (Existing)</label>
+                                            </div>
+                                            <div id="op-payee-owner-div" class="conditional-div" style="display:none;">
+                                                <select id="op-payee-owner-select">
+                                                    <option value="">Select Owner</option>
+                                                </select>
+                                            </div>
+                                            <div id="op-payee-customer-div" class="conditional-div" style="display:none;">
+                                                <input type="text" id="op-payee-customer-name" placeholder="Select Existing Customer" list="payee-customers-list">
+                                                <datalist id="payee-customers-list"></datalist>
+                                                <div id="op-payee-customer-balance" class="customer-balance" style="display:none;"></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="form-row">
+                                        <div class="form-group">
+                                            <label for="op-amount">Amount</label>
+                                            <input type="number" id="op-amount" placeholder="0.00" step="0.01">
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="op-cash-type">Cash Type</label>
+                                            <select id="op-cash-type">
+                                                <option value="">Select Cash Type</option>
+                                                <option value="USD">USD</option>
+                                                <option value="EUR">EUR</option>
+                                                <option value="GBP">GBP</option>
+                                                <option value="UGX">UGX</option>
+                                                <option value="KES">KES</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="form-group">
+                                        <label for="op-desc">Description</label>
+                                        <input type="text" id="op-desc" placeholder="Transaction description">
+                                    </div>
+                                    
+                                    <h4>Transaction Type</h4>
+                                    <div class="action-buttons">
+                                        <button id="op-pr-btn" class="btn-action btn-success">PR (Partial Payment)</button>
+                                        <button id="op-full-btn" class="btn-action btn-primary">Full Payment</button>
+                                        <button id="op-debt-btn" class="btn-action btn-warning">Debt</button>
+                                    </div>
+                                    <div id="op-message" class="message-container"></div>
+                                </div>
+                            </div>
+                            
+                            <!-- General Entry Tab -->
+                            <div id="general-entry-tab" class="tab-content">
+                                <h3>General Entry</h3>
+                                <div class="transaction-form">
+                                    <div class="form-row">
+                                        <div class="form-group">
+                                            <label for="ge-amount">Amount</label>
+                                            <input type="number" id="ge-amount" placeholder="0.00" step="0.01">
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="ge-desc">Description</label>
+                                            <input type="text" id="ge-desc" placeholder="Entry description">
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Adjustment Options (hidden by default) -->
+                                    <div id="adjustment-options" style="display: none;">
+                                        <h4>Adjustment Details</h4>
+                                        <div class="form-row">
+                                            <div class="form-group">
+                                                <h4>Select who is being adjusted</h4>
+                                                <div class="checkbox-group">
+                                                    <label><input type="checkbox" id="adjustment-owner-chk"> Owner</label>
+                                                    <label><input type="checkbox" id="adjustment-customer-chk"> Customer</label>
+                                                </div>
+                                                <div id="adjustment-owner-div" class="conditional-div" style="display:none;">
+                                                    <select id="adjustment-owner-select">
+                                                        <option value="">Select Owner</option>
+                                                    </select>
+                                                </div>
+                                                <div id="adjustment-customer-div" class="conditional-div" style="display:none;">
+                                                    <select id="adjustment-customer-select">
+                                                        <option value="">Select Customer</option>
+                                                    </select>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="form-row">
+                                            <div class="form-group">
+                                                <h4>Adjustment Direction</h4>
+                                                <div class="radio-group">
+                                                    <label><input type="radio" name="adjustment-direction" value="+"> Add money (+)</label>
+                                                    <label><input type="radio" name="adjustment-direction" value="-"> Deduct money (-)</label>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        <!-- THIS IS THE MISSING SUBMIT BUTTON FOR ADJUSTMENT -->
+                                        <div class="action-buttons">
+                                            <button id="ge-adjustment-submit-btn" class="btn-action btn-primary">Submit Adjustment</button>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="action-buttons">
+                                        <button id="ge-in-btn" class="btn-action btn-success">IN</button>
+                                        <button id="ge-out-btn" class="btn-action btn-danger">OUT</button>
+                                        <button id="ge-adjustment-btn" class="btn-action btn-warning">Adjustment</button>
+                                    </div>
+                                    <div id="ge-message" class="message-container"></div>
+                                </div>
+                            </div>
+                            
+                            <!-- All Transactions Tab -->
+                            <div id="all-transactions-tab" class="tab-content">
+                                <div class="table-container">
+                                    <table class="data-table">
+                                        <thead>
+                                            <tr>
+                                                <th>Date</th>
+                                                <th>Type</th>
+                                                <th>Payer/From</th>
+                                                <th>Receiver/To</th>
+                                                <th>Amount</th>
+                                                <th>Description</th>
+                                                <th>Cash Type</th>
+                                                <th>Action</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="money-exchanger-transactions-tbody">
+                                            <!-- Transactions will be populated here -->
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Reports Section -->
+                    <div class="section-card">
+                        <div class="section-header">
+                            <h3>Reports</h3>
+                        </div>
+                        <div class="section-content">
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="modal-report-start-date">From Date</label>
+                                    <input type="date" id="modal-report-start-date">
+                                </div>
+                                <div class="form-group">
+                                    <label for="modal-report-end-date">To Date</label>
+                                    <input type="date" id="modal-report-end-date">
+                                </div>
+                            </div>
+                            <div class="action-buttons">
+                                <button id="modal-generate-pdf-report" class="btn-action btn-primary">Generate PDF</button>
+                                <button id="modal-generate-excel-report" class="btn-action btn-secondary">Generate Excel</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Edit Transaction Modal -->
+        <div id="edit-transaction-modal" class="modal hidden">
+            <div class="modal-overlay"></div>
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>Edit Transaction</h2>
+                    <button id="close-edit-transaction" class="modal-close">&times;</button>
+                </div>
+                
+                <form id="edit-transaction-form" class="modal-form">
+                    <input type="hidden" id="edit-transaction-id">
+                    <div class="form-group">
+                        <label for="edit-transaction-date">Date</label>
+                        <input type="text" id="edit-transaction-date" readonly>
+                    </div>
+                    <div class="form-group">
+                        <label for="edit-transaction-type">Type</label>
+                        <input type="text" id="edit-transaction-type" readonly>
+                    </div>
+                    <div class="form-group">
+                        <label for="edit-transaction-payer">Payer</label>
+                        <input type="text" id="edit-transaction-payer" readonly>
+                    </div>
+                    <div class="form-group">
+                        <label for="edit-transaction-receiver">Receiver</label>
+                        <input type="text" id="edit-transaction-receiver" readonly>
+                    </div>
+                    <div class="form-group">
+                        <label for="edit-transaction-amount">Amount</label>
+                        <input type="number" id="edit-transaction-amount" step="0.01" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="edit-transaction-description">Description</label>
+                        <input type="text" id="edit-transaction-description" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="edit-transaction-cash-type">Cash Type</label>
+                        <select id="edit-transaction-cash-type" required>
+                            <option value="USD">USD</option>
+                            <option value="SOS">SOS</option>
+                            <option value="EUR">EUR</option>
+                            <option value="GBP">GBP</option>
+                            <option value="UGX">UGX</option>
+                            <option value="KES">KES</option>
+                        </select>
+                    </div>
+                    <div class="modal-actions">
+                        <button type="button" id="cancel-edit-transaction" class="btn-secondary">Cancel</button>
+                        <button type="submit" class="btn-primary">Update Transaction</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
         <!-- Admin Settings Modal -->
         <div id="admin-settings-modal" class="modal hidden">
             <div class="modal-overlay"></div>
@@ -460,275 +781,7 @@
                 </form>
             </div>
         </div>
-
-        <!-- Add Transaction Modal -->
-        <div id="add-transaction-modal" class="modal hidden">
-            <div class="modal-overlay"></div>
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h2>New Exchange Transaction</h2>
-                    <button id="close-add-transaction" class="modal-close">&times;</button>
-                </div>
-                
-                <form id="add-transaction-form" class="modal-form">
-                    <div class="form-group">
-                        <label for="customer-name">Customer Name</label>
-                        <input type="text" id="customer-name" name="customerName" required>
-                    </div>
-                    
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="from-currency-tx">From Currency</label>
-                            <select id="from-currency-tx" name="fromCurrency" required>
-                                <option value="USD">USD - US Dollar</option>
-                                <option value="EUR">EUR - Euro</option>
-                                <option value="GBP">GBP - British Pound</option>
-                                <option value="UGX">UGX - Ugandan Shilling</option>
-                                <option value="SOS">SOS - Somali Shilling</option>
-                                <option value="KES">KES - Kenyan Shilling</option>
-                                <option value="ETB">ETB - Ethiopian Birr</option>
-                                <option value="DJF">DJF - Djibouti Franc</option>
-                                <option value="ERN">ERN - Eritrean Nakfa</option>
-                                <option value="SDG">SDG - Sudanese Pound</option>
-                            </select>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label for="to-currency-tx">To Currency</label>
-                            <select id="to-currency-tx" name="toCurrency" required>
-                                <option value="UGX">UGX - Ugandan Shilling</option>
-                                <option value="USD">USD - US Dollar</option>
-                                <option value="EUR">EUR - Euro</option>
-                                <option value="GBP">GBP - British Pound</option>
-                                <option value="SOS">SOS - Somali Shilling</option>
-                                <option value="KES">KES - Kenyan Shilling</option>
-                                <option value="ETB">ETB - Ethiopian Birr</option>
-                                <option value="DJF">DJF - Djibouti Franc</option>
-                                <option value="ERN">ERN - Eritrean Nakfa</option>
-                                <option value="SDG">SDG - Sudanese Pound</option>
-                            </select>
-                        </div>
-                    </div>
-                    
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="from-amount-tx">From Amount</label>
-                            <input type="number" id="from-amount-tx" name="fromAmount" step="0.01" required>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label for="exchange-rate-tx">Exchange Rate</label>
-                            <input type="number" id="exchange-rate-tx" name="exchangeRate" step="0.0001" required>
-                        </div>
-                    </div>
-                    
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="to-amount-tx">To Amount</label>
-                            <input type="number" id="to-amount-tx" name="toAmount" step="0.01" readonly>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label for="profit-margin-tx">Profit Margin (%)</label>
-                            <input type="number" id="profit-margin-tx" name="profitMargin" step="0.01" value="2.00" required>
-                        </div>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="notes-tx">Notes (optional)</label>
-                        <textarea id="notes-tx" name="notes" rows="3"></textarea>
-                    </div>
-                    
-                    <div class="transaction-summary">
-                        <div class="summary-row">
-                            <span>Expected Profit:</span>
-                            <span id="expected-profit-tx">$0.00</span>
-                        </div>
-                    </div>
-                    
-                    <div class="modal-actions">
-                        <button type="button" id="cancel-add-transaction" class="btn-secondary">Cancel</button>
-                        <button type="submit" class="btn-primary">Add Transaction</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-
-        <!-- Edit Transaction Modal -->
-        <div id="edit-transaction-modal" class="modal hidden">
-            <div class="modal-overlay"></div>
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h2>Edit Transaction</h2>
-                    <button id="close-edit-transaction" class="modal-close">&times;</button>
-                </div>
-                
-                <form id="edit-transaction-form" class="modal-form">
-                    <input type="hidden" id="edit-transaction-id">
-                    
-                    <div class="form-group">
-                        <label for="edit-customer-name">Customer Name</label>
-                        <input type="text" id="edit-customer-name" name="customerName" required>
-                    </div>
-                    
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="edit-from-currency">From Currency</label>
-                            <select id="edit-from-currency" name="fromCurrency" required>
-                                <option value="USD">USD - US Dollar</option>
-                                <option value="EUR">EUR - Euro</option>
-                                <option value="GBP">GBP - British Pound</option>
-                                <option value="UGX">UGX - Ugandan Shilling</option>
-                                <option value="SOS">SOS - Somali Shilling</option>
-                                <option value="KES">KES - Kenyan Shilling</option>
-                                <option value="ETB">ETB - Ethiopian Birr</option>
-                                <option value="DJF">DJF - Djibouti Franc</option>
-                                <option value="ERN">ERN - Eritrean Nakfa</option>
-                                <option value="SDG">SDG - Sudanese Pound</option>
-                            </select>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label for="edit-to-currency">To Currency</label>
-                            <select id="edit-to-currency" name="toCurrency" required>
-                                <option value="UGX">UGX - Ugandan Shilling</option>
-                                <option value="USD">USD - US Dollar</option>
-                                <option value="EUR">EUR - Euro</option>
-                                <option value="GBP">GBP - British Pound</option>
-                                <option value="SOS">SOS - Somali Shilling</option>
-                                <option value="KES">KES - Kenyan Shilling</option>
-                                <option value="ETB">ETB - Ethiopian Birr</option>
-                                <option value="DJF">DJF - Djibouti Franc</option>
-                                <option value="ERN">ERN - Eritrean Nakfa</option>
-                                <option value="SDG">SDG - Sudanese Pound</option>
-                            </select>
-                        </div>
-                    </div>
-                    
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="edit-from-amount">From Amount</label>
-                            <input type="number" id="edit-from-amount" name="fromAmount" step="0.01" required>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label for="edit-exchange-rate">Exchange Rate</label>
-                            <input type="number" id="edit-exchange-rate" name="exchangeRate" step="0.0001" required>
-                        </div>
-                    </div>
-                    
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="edit-to-amount">To Amount</label>
-                            <input type="number" id="edit-to-amount" name="toAmount" step="0.01" readonly>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label for="edit-profit-margin">Profit Margin (%)</label>
-                            <input type="number" id="edit-profit-margin" name="profitMargin" step="0.01" required>
-                        </div>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="edit-notes">Notes (optional)</label>
-                        <textarea id="edit-notes" name="notes" rows="3"></textarea>
-                    </div>
-                    
-                    <div class="modal-actions">
-                        <button type="button" id="cancel-edit-transaction" class="btn-secondary">Cancel</button>
-                        <button type="submit" class="btn-primary">Update Transaction</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-
-        <!-- Add Currency Modal -->
-        <div id="add-currency-modal" class="modal hidden">
-            <div class="modal-overlay"></div>
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h2>Add Currency Balance</h2>
-                    <button id="close-add-currency" class="modal-close">&times;</button>
-                </div>
-                
-                <form id="add-currency-form" class="modal-form">
-                    <div class="form-group">
-                        <label for="currency-select">Currency</label>
-                        <select id="currency-select" name="currency" required>
-                            <option value="">Select Currency</option>
-                            <option value="USD">USD - US Dollar</option>
-                            <option value="EUR">EUR - Euro</option>
-                            <option value="GBP">GBP - British Pound</option>
-                            <option value="UGX">UGX - Ugandan Shilling</option>
-                            <option value="SOS">SOS - Somali Shilling</option>
-                            <option value="KES">KES - Kenyan Shilling</option>
-                            <option value="ETB">ETB - Ethiopian Birr</option>
-                            <option value="DJF">DJF - Djibouti Franc</option>
-                            <option value="ERN">ERN - Eritrean Nakfa</option>
-                            <option value="SDG">SDG - Sudanese Pound</option>
-                        </select>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="currency-amount">Amount</label>
-                        <input type="number" id="currency-amount" name="amount" step="0.01" required>
-                    </div>
-                    
-                    <div class="modal-actions">
-                        <button type="button" id="cancel-add-currency" class="btn-secondary">Cancel</button>
-                        <button type="submit" class="btn-primary">Add Currency</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-
-        <!-- Generate Report Modal -->
-        <div id="generate-report-modal" class="modal hidden">
-            <div class="modal-overlay"></div>
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h2>Generate Report</h2>
-                    <button id="close-generate-report" class="modal-close">&times;</button>
-                </div>
-                
-                <form id="generate-report-form" class="modal-form">
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="report-start-date">Start Date</label>
-                            <input type="date" id="report-start-date" name="startDate" required>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label for="report-end-date">End Date</label>
-                            <input type="date" id="report-end-date" name="endDate" required>
-                        </div>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="report-format">Report Format</label>
-                        <select id="report-format" name="format" required>
-                            <option value="pdf">PDF Report</option>
-                            <option value="excel">Excel Spreadsheet</option>
-                        </select>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label>Include Filters</label>
-                        <div class="checkbox-group">
-                            <label><input type="checkbox" id="include-profit" checked> Profit Analysis</label>
-                            <label><input type="checkbox" id="include-currency" checked> Currency Breakdown</label>
-                            <label><input type="checkbox" id="include-customers" checked> Customer Details</label>
-                        </div>
-                    </div>
-                    
-                    <div class="modal-actions">
-                        <button type="button" id="cancel-generate-report" class="btn-secondary">Cancel</button>
-                        <button type="submit" class="btn-primary">Generate Report</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-
+        
         <!-- Loading Overlay -->
         <div id="loading-overlay" class="loading-overlay hidden">
             <div class="loading-spinner">
@@ -736,11 +789,11 @@
                 <div class="loading-text">Processing...</div>
             </div>
         </div>
-
+        
         <!-- Toast Container -->
         <div id="toast-container" class="toast-container"></div>
     </div>
-
+    
     <script src="app.js"></script>
 </body>
 </html>

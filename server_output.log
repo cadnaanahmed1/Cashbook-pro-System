@@ -1,0 +1,9 @@
+Enhanced demo data initialized
+Multi-currency support: USD, EUR, GBP, UGX, SOS, KES, ETB, DJF, ERN, SDG
+Default owner - Username: admin, Password: admin123
+Demo client - Username: democlient, Password: client123
+✅ Enhanced CashBook Pro Server running on http://0.0.0.0:5000
+📊 Multi-currency MongoDB simulation active
+💱 Supported currencies: USD, EUR, GBP, UGX, SOS, KES, ETB, DJF, ERN, SDG
+🔐 Default admin: username=admin, password=admin123
+👤 Demo client: username=democlient, password=client123
