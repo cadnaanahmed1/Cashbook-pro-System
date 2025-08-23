@@ -2,7 +2,7 @@
 class CashBookApp {
     constructor() {
         this.currentUser = null;
-        this.API_BASE = 'http://localhost:5000';
+        this.API_BASE = 'https://cashbook-pro-system.onrender.com/';
         this.moneyExchangerData = {
             owners: [],
             customers: {},
