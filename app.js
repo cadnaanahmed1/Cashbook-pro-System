@@ -269,66 +269,68 @@ class CashBookApp {
     }
     
     updatePaymentPage() {
-        if (!this.currentUser) return;
-        
-        const statusBadge = document.getElementById('account-status-badge');
-        if (statusBadge) {
-            statusBadge.textContent = this.currentUser.accountStatus.charAt(0).toUpperCase() + this.currentUser.accountStatus.slice(1);
-            statusBadge.className = `status-badge ${this.currentUser.accountStatus}`;
-        }
+    if (!this.currentUser) return;
+    
+    const statusBadge = document.getElementById('account-status-badge');
+    if (statusBadge) {
+        statusBadge.textContent = this.currentUser.accountStatus.charAt(0).toUpperCase() + this.currentUser.accountStatus.slice(1);
+        statusBadge.className = `status-badge ${this.currentUser.accountStatus}`;
+    }
+}
+
+
+    
+updateClientsTable(clients) {
+    const tbody = document.getElementById('clients-tbody');
+    if (!tbody) return;
+    
+    tbody.innerHTML = '';
+    
+    if (clients.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: #64748b;">No clients found</td></tr>';
+        return;
     }
     
-    updateClientsTable(clients) {
-        const tbody = document.getElementById('clients-tbody');
-        if (!tbody) return;
-        
-        tbody.innerHTML = '';
-        
-        if (clients.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: #64748b;">No clients found</td></tr>';
-            return;
-        }
-        
-        clients.forEach(client => {
-            const row = document.createElement('tr');
-            row.innerHTML = `
-                <td>
-                    <div class="client-info">
-                        <div class="client-avatar">
-                            ${client.fullName.charAt(0).toUpperCase()}
-                        </div>
-                        <div class="client-details">
-                            <h4>${client.businessName || client.fullName}</h4>
-                            <p>${client.email}</p>
-                        </div>
+    clients.forEach(client => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td>
+                <div class="client-info">
+                    <div class="client-avatar">
+                        ${client.fullName.charAt(0).toUpperCase()}
                     </div>
-                </td>
-                <td>
-                    <span class="status-badge ${client.accountStatus}">
-                        ${client.accountStatus.charAt(0).toUpperCase() + client.accountStatus.slice(1)}
-                    </span>
-                </td>
-                <td>
-                    <div>Expires: ${client.subscriptionEnd ? new Date(client.subscriptionEnd).toLocaleDateString() : 'N/A'}</div>
-                    <div style="font-size: 0.75rem; color: #64748b;">
-                        ${this.getDaysRemainingForClient(client.subscriptionEnd)} remaining
+                    <div class="client-details">
+                        <h4>${client.businessName || client.fullName}</h4>
+                        <p>${client.email}</p>
                     </div>
-                </td>
-                <td>
-                    ${client.lastPayment ? new Date(client.lastPayment).toLocaleDateString() : 'N/A'}
-                </td>
-                <td>
-                    <div class="action-buttons">
-                        ${client.accountStatus === 'pending' ? 
-                            `<button class="btn-action btn-verify" onclick="app.verifyPayment('${client.id}')">Verify</button>` : ''}
-                        ${client.accountStatus === 'active' ? 
-                            `<button class="btn-action btn-deactivate" onclick="app.suspendClient('${client.id}')">Suspend</button>` : ''}
-                    </div>
-                </td>
-            `;
-            tbody.appendChild(row);
-        });
-    }
+                </div>
+            </td>
+            <td>
+                <span class="status-badge ${client.accountStatus}">
+                    ${client.accountStatus.charAt(0).toUpperCase() + client.accountStatus.slice(1)}
+                </span>
+            </td>
+            <td>
+                <div>Expires: ${client.subscriptionEnd ? new Date(client.subscriptionEnd).toLocaleDateString() : 'N/A'}</div>
+                <div style="font-size: 0.75rem; color: #64748b;">
+                    ${this.getDaysRemainingForClient(client.subscriptionEnd)} remaining
+                </div>
+            </td>
+            <td>
+                ${client.lastPayment ? new Date(client.lastPayment).toLocaleDateString() : 'N/A'}
+            </td>
+            <td>
+                <div class="action-buttons">
+                    ${client.accountStatus === 'pending' ? 
+                        `<button class="btn-action btn-verify" onclick="app.verifyPayment('${client._id}')">Verify</button>` : ''}
+                    ${client.accountStatus === 'active' ? 
+                        `<button class="btn-action btn-deactivate" onclick="app.suspendClient('${client._id}')">Suspend</button>` : ''}
+                </div>
+            </td>
+        `;
+        tbody.appendChild(row);
+    });
+}
     
     // Client Action Methods
     async verifyPayment(clientId) {
