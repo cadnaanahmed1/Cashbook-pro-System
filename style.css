@@ -940,14 +940,12 @@ body {
     padding: 0 1rem 1rem;
     color: #64748b;
 }
-
 /* Responsive Design */
 @media (max-width: 1200px) {
     .dashboard-grid {
         grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
     }
 }
-
 @media (max-width: 992px) {
     .dashboard-grid {
         grid-template-columns: 1fr;
@@ -981,7 +979,6 @@ body {
         min-width: 600px;
     }
 }
-
 @media (max-width: 768px) {
     .container {
         padding: 1rem;
@@ -1102,7 +1099,6 @@ body {
         -webkit-overflow-scrolling: touch;
     }
 }
-
 @media (max-width: 480px) {
     .auth-header h1 {
         font-size: 1.5rem;
@@ -1246,7 +1242,6 @@ body {
         font-size: 0.7rem;
     }
 }
-
 /* Print Styles */
 @media print {
     .navbar,
