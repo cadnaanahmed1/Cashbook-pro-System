@@ -65,7 +65,6 @@ class CashBookApp {
         try {
             this.showLoading();
             const response = await fetch(`${this.API_BASE}${endpoint.replace(/^\/+/,'')}`, options);
-
             const result = await response.json();
             
             if (!response.ok) {
@@ -1008,292 +1007,175 @@ class CashBookApp {
             console.log('Adjustment options shown:', show);
         }
     }
-
+    
     handleGeneralEntry(type) {
-    console.log('handleGeneralEntry called with type:', type);
-    
-    const amount = parseFloat(document.getElementById('ge-amount').value);
-    const desc = document.getElementById('ge-desc').value.trim();
-    
-    if (!amount || amount <= 0) {
-        this.showMessage('ge-message', 'Please enter valid amount', 'error');
-        return;
-    }
-    
-    if (!desc) {
-        this.showMessage('ge-message', 'Please enter description', 'error');
-        return;
-    }
-    
-    let payer = 'System';
-    let receiver = 'System';
-    
-    // For Adjustment transactions, set actual payer and receiver names
-    if (type === 'Adjustment') {
-        console.log('Processing adjustment transaction');
+        console.log('handleGeneralEntry called with type:', type);
         
-        // Get adjustment type (Owner or Customer)
-        const isAdjustmentOwner = document.getElementById('adjustment-owner-chk').checked;
-        const isAdjustmentCustomer = document.getElementById('adjustment-customer-chk').checked;
+        const amount = parseFloat(document.getElementById('ge-amount').value);
+        const desc = document.getElementById('ge-desc').value.trim();
         
-        console.log('Adjustment Owner checked:', isAdjustmentOwner);
-        console.log('Adjustment Customer checked:', isAdjustmentCustomer);
-        
-        if (!isAdjustmentOwner && !isAdjustmentCustomer) {
-            this.showMessage('ge-message', 'Please select who is being adjusted (Owner or Customer)', 'error');
+        if (!amount || amount <= 0) {
+            this.showMessage('ge-message', 'Please enter valid amount', 'error');
             return;
         }
         
-        let personName = '';
-        let personType = '';
-        
-        if (isAdjustmentOwner) {
-            personName = document.getElementById('adjustment-owner-select').value;
-            personType = 'owner';
-        } else {
-            personName = document.getElementById('adjustment-customer-select').value;
-            personType = 'customer';
-        }
-        
-        console.log('Person name:', personName);
-        console.log('Person type:', personType);
-        
-        if (!personName) {
-            this.showMessage('ge-message', `Please select a ${personType}`, 'error');
+        if (!desc) {
+            this.showMessage('ge-message', 'Please enter description', 'error');
             return;
         }
         
-        // Check if customer exists
-        if (personType === 'customer' && this.moneyExchangerData.customers[personName] === undefined) {
-            this.showMessage('ge-message', `Customer ${personName} does not exist`, 'error');
-            return;
-        }
+        let payer = 'System';
+        let receiver = 'System';
         
-        // Get adjustment direction
-        const adjustmentDirection = document.querySelector('input[name="adjustment-direction"]:checked')?.value;
-        
-        console.log('Adjustment direction:', adjustmentDirection);
-        
-        if (!adjustmentDirection) {
-            this.showMessage('ge-message', 'Please select adjustment direction (+ or -)', 'error');
-            return;
-        }
-        
-        // Set payer and receiver based on adjustment type and direction
-        if (personType === 'owner') {
-            if (adjustmentDirection === '+') {
-                // Money is added to owner's account (System → Owner)
-                payer = 'System';
-                receiver = personName;
-            } else {
-                // Money is deducted from owner's account (Owner → System)
-                payer = personName;
-                receiver = 'System';
-            }
-        } else if (personType === 'customer') {
-            // Get current owner name
-            const currentOwner = this.currentUser.fullName;
+        // For Adjustment transactions, set actual payer and receiver names
+        if (type === 'Adjustment') {
+            console.log('Processing adjustment transaction');
             
-            if (adjustmentDirection === '+') {
-                // Money is added to customer's account (Owner → Customer)
-                payer = currentOwner;
-                receiver = personName;
+            // Get adjustment type (Owner or Customer)
+            const isAdjustmentOwner = document.getElementById('adjustment-owner-chk').checked;
+            const isAdjustmentCustomer = document.getElementById('adjustment-customer-chk').checked;
+            
+            console.log('Adjustment Owner checked:', isAdjustmentOwner);
+            console.log('Adjustment Customer checked:', isAdjustmentCustomer);
+            
+            if (!isAdjustmentOwner && !isAdjustmentCustomer) {
+                this.showMessage('ge-message', 'Please select who is being adjusted (Owner or Customer)', 'error');
+                return;
+            }
+            
+            let personName = '';
+            let personType = '';
+            
+            if (isAdjustmentOwner) {
+                personName = document.getElementById('adjustment-owner-select').value;
+                personType = 'owner';
             } else {
-                // Money is deducted from customer's account (Customer → Owner)
-                payer = personName;
-                receiver = currentOwner;
+                personName = document.getElementById('adjustment-customer-select').value;
+                personType = 'customer';
+            }
+            
+            console.log('Person name:', personName);
+            console.log('Person type:', personType);
+            
+            if (!personName) {
+                this.showMessage('ge-message', `Please select a ${personType}`, 'error');
+                return;
+            }
+            
+            // Check if customer exists
+            if (personType === 'customer' && this.moneyExchangerData.customers[personName] === undefined) {
+                this.showMessage('ge-message', `Customer ${personName} does not exist`, 'error');
+                return;
+            }
+            
+            // Get adjustment direction
+            const adjustmentDirection = document.querySelector('input[name="adjustment-direction"]:checked')?.value;
+            
+            console.log('Adjustment direction:', adjustmentDirection);
+            
+            if (!adjustmentDirection) {
+                this.showMessage('ge-message', 'Please select adjustment direction (+ or -)', 'error');
+                return;
+            }
+            
+            // Set payer and receiver based on adjustment type and direction
+            if (personType === 'owner') {
+                if (adjustmentDirection === '+') {
+                    // Money is added to owner's account (System → Owner)
+                    payer = 'System';
+                    receiver = personName;
+                } else {
+                    // Money is deducted from owner's account (Owner → System)
+                    payer = personName;
+                    receiver = 'System';
+                }
+            } else if (personType === 'customer') {
+                // Get current owner name
+                const currentOwner = this.currentUser.fullName;
+                
+                if (adjustmentDirection === '+') {
+                    // Money is added to customer's account (Owner → Customer)
+                    payer = currentOwner;
+                    receiver = personName;
+                } else {
+                    // Money is deducted from customer's account (Customer → Owner)
+                    payer = personName;
+                    receiver = currentOwner;
+                }
             }
         }
+        
+        // Create transaction
+        const transaction = {
+            date: new Date().toISOString(),
+            type: `General Entry (${type})`,
+            payer: payer,
+            receiver: receiver,
+            amount: amount,
+            description: desc,
+            cashType: 'USD'
+        };
+        
+        // Add transaction and update balance
+        this.moneyExchangerData.transactions.push(transaction);
+        
+        if (type === 'IN') {
+            this.moneyExchangerData.ownerBalance += amount;
+        } else if (type === 'OUT') {
+            this.moneyExchangerData.ownerBalance -= amount;
+        } else if (type === 'Adjustment') {
+            console.log('Processing adjustment transaction');
+            
+            // Get adjustment type (Owner or Customer)
+            const isAdjustmentOwner = document.getElementById('adjustment-owner-chk').checked;
+            const isAdjustmentCustomer = document.getElementById('adjustment-customer-chk').checked;
+            
+            let personName = '';
+            let personType = '';
+            
+            if (isAdjustmentOwner) {
+                personName = document.getElementById('adjustment-owner-select').value;
+                personType = 'owner';
+            } else {
+                personName = document.getElementById('adjustment-customer-select').value;
+                personType = 'customer';
+            }
+            
+            // Get adjustment direction
+            const adjustmentDirection = document.querySelector('input[name="adjustment-direction"]:checked')?.value;
+            
+            // Update balances based on adjustment type and direction
+            if (personType === 'owner') {
+                if (adjustmentDirection === '+') {
+                    // Owner's balance increases
+                    this.moneyExchangerData.ownerBalance += amount;
+                    console.log('Owner balance increased by', amount);
+                } else {
+                    // Owner's balance decreases
+                    this.moneyExchangerData.ownerBalance -= amount;
+                    console.log('Owner balance decreased by', amount);
+                }
+            } else if (personType === 'customer') {
+                if (adjustmentDirection === '+') {
+                    // Customer's balance increases, Owner's balance decreases
+                    this.moneyExchangerData.customers[personName] += amount;
+                    this.moneyExchangerData.ownerBalance -= amount;
+                    console.log('Customer balance increased by', amount, 'Owner balance decreased by', amount);
+                } else {
+                    // Customer's balance decreases, Owner's balance increases
+                    this.moneyExchangerData.customers[personName] -= amount;
+                    this.moneyExchangerData.ownerBalance += amount;
+                    console.log('Customer balance decreased by', amount, 'Owner balance increased by', amount);
+                }
+            }
+        }
+        
+        // Save and update UI
+        this.saveMoneyExchangerData();
+        this.updateMoneyExchangerUI();
+        this.clearGeneralEntryForm();
+        this.showMessage('ge-message', `${type} entry added successfully`, 'success');
     }
-    
-    // Create transaction
-    const transaction = {
-        date: new Date().toISOString(),
-        type: `General Entry (${type})`,
-        payer: payer,
-        receiver: receiver,
-        amount: amount,
-        description: desc,
-        cashType: 'USD'
-    };
-    
-    // Add transaction and update balance
-    this.moneyExchangerData.transactions.push(transaction);
-    
-    if (type === 'IN') {
-        this.moneyExchangerData.ownerBalance += amount;
-    } else if (type === 'OUT') {
-        this.moneyExchangerData.ownerBalance -= amount;
-    } else if (type === 'Adjustment') {
-        console.log('Processing adjustment transaction');
-        
-        // Get adjustment type (Owner or Customer)
-        const isAdjustmentOwner = document.getElementById('adjustment-owner-chk').checked;
-        const isAdjustmentCustomer = document.getElementById('adjustment-customer-chk').checked;
-        
-        let personName = '';
-        let personType = '';
-        
-        if (isAdjustmentOwner) {
-            personName = document.getElementById('adjustment-owner-select').value;
-            personType = 'owner';
-        } else {
-            personName = document.getElementById('adjustment-customer-select').value;
-            personType = 'customer';
-        }
-        
-        // Get adjustment direction
-        const adjustmentDirection = document.querySelector('input[name="adjustment-direction"]:checked')?.value;
-        
-        // Update balances based on adjustment type and direction
-        if (personType === 'owner') {
-            if (adjustmentDirection === '+') {
-                // Owner's balance increases
-                this.moneyExchangerData.ownerBalance += amount;
-                console.log('Owner balance increased by', amount);
-            } else {
-                // Owner's balance decreases
-                this.moneyExchangerData.ownerBalance -= amount;
-                console.log('Owner balance decreased by', amount);
-            }
-        } else if (personType === 'customer') {
-            if (adjustmentDirection === '+') {
-                // Customer's balance increases, Owner's balance decreases
-                this.moneyExchangerData.customers[personName] += amount;
-                this.moneyExchangerData.ownerBalance -= amount;
-                console.log('Customer balance increased by', amount, 'Owner balance decreased by', amount);
-            } else {
-                // Customer's balance decreases, Owner's balance increases
-                this.moneyExchangerData.customers[personName] -= amount;
-                this.moneyExchangerData.ownerBalance += amount;
-                console.log('Customer balance decreased by', amount, 'Owner balance increased by', amount);
-            }
-        }
-    }
-    
-    // Save and update UI
-    this.saveMoneyExchangerData();
-    this.updateMoneyExchangerUI();
-    this.clearGeneralEntryForm();
-    this.showMessage('ge-message', `${type} entry added successfully`, 'success');
-}
-    
-    // handleGeneralEntry(type) {
-    //     console.log('handleGeneralEntry called with type:', type);
-        
-    //     const amount = parseFloat(document.getElementById('ge-amount').value);
-    //     const desc = document.getElementById('ge-desc').value.trim();
-        
-    //     if (!amount || amount <= 0) {
-    //         this.showMessage('ge-message', 'Please enter valid amount', 'error');
-    //         return;
-    //     }
-        
-    //     if (!desc) {
-    //         this.showMessage('ge-message', 'Please enter description', 'error');
-    //         return;
-    //     }
-        
-    //     // Create transaction
-    //     const transaction = {
-    //         date: new Date().toISOString(),
-    //         type: `General Entry (${type})`,
-    //         payer: 'System',
-    //         receiver: 'System',
-    //         amount: amount,
-    //         description: desc,
-    //         cashType: 'USD'
-    //     };
-        
-    //     // Add transaction and update balance
-    //     this.moneyExchangerData.transactions.push(transaction);
-        
-    //     if (type === 'IN') {
-    //         this.moneyExchangerData.ownerBalance += amount;
-    //     } else if (type === 'OUT') {
-    //         this.moneyExchangerData.ownerBalance -= amount;
-    //     } else if (type === 'Adjustment') {
-    //         console.log('Processing adjustment transaction');
-            
-    //         // Get adjustment type (Owner or Customer)
-    //         const isAdjustmentOwner = document.getElementById('adjustment-owner-chk').checked;
-    //         const isAdjustmentCustomer = document.getElementById('adjustment-customer-chk').checked;
-            
-    //         console.log('Adjustment Owner checked:', isAdjustmentOwner);
-    //         console.log('Adjustment Customer checked:', isAdjustmentCustomer);
-            
-    //         if (!isAdjustmentOwner && !isAdjustmentCustomer) {
-    //             this.showMessage('ge-message', 'Please select who is being adjusted (Owner or Customer)', 'error');
-    //             return;
-    //         }
-            
-    //         let personName = '';
-    //         let personType = '';
-            
-    //         if (isAdjustmentOwner) {
-    //             personName = document.getElementById('adjustment-owner-select').value;
-    //             personType = 'owner';
-    //         } else {
-    //             personName = document.getElementById('adjustment-customer-select').value;
-    //             personType = 'customer';
-    //         }
-            
-    //         console.log('Person name:', personName);
-    //         console.log('Person type:', personType);
-            
-    //         if (!personName) {
-    //             this.showMessage('ge-message', `Please select a ${personType}`, 'error');
-    //             return;
-    //         }
-            
-    //         // Check if customer exists
-    //         if (personType === 'customer' && this.moneyExchangerData.customers[personName] === undefined) {
-    //             this.showMessage('ge-message', `Customer ${personName} does not exist`, 'error');
-    //             return;
-    //         }
-            
-    //         // Get adjustment direction
-    //         const adjustmentDirection = document.querySelector('input[name="adjustment-direction"]:checked')?.value;
-            
-    //         console.log('Adjustment direction:', adjustmentDirection);
-            
-    //         if (!adjustmentDirection) {
-    //             this.showMessage('ge-message', 'Please select adjustment direction (+ or -)', 'error');
-    //             return;
-    //         }
-            
-    //         // Update balances based on adjustment type and direction
-    //         if (personType === 'owner') {
-    //             if (adjustmentDirection === '+') {
-    //                 // Owner's balance increases
-    //                 this.moneyExchangerData.ownerBalance += amount;
-    //                 console.log('Owner balance increased by', amount);
-    //             } else {
-    //                 // Owner's balance decreases
-    //                 this.moneyExchangerData.ownerBalance -= amount;
-    //                 console.log('Owner balance decreased by', amount);
-    //             }
-    //         } else if (personType === 'customer') {
-    //             if (adjustmentDirection === '+') {
-    //                 // Customer's balance increases, Owner's balance decreases
-    //                 this.moneyExchangerData.customers[personName] += amount;
-    //                 this.moneyExchangerData.ownerBalance -= amount;
-    //                 console.log('Customer balance increased by', amount, 'Owner balance decreased by', amount);
-    //             } else {
-    //                 // Customer's balance decreases, Owner's balance increases
-    //                 this.moneyExchangerData.customers[personName] -= amount;
-    //                 this.moneyExchangerData.ownerBalance += amount;
-    //                 console.log('Customer balance decreased by', amount, 'Owner balance increased by', amount);
-    //             }
-    //         }
-    //     }
-        
-    //     // Save and update UI
-    //     this.saveMoneyExchangerData();
-    //     this.updateMoneyExchangerUI();
-    //     this.clearGeneralEntryForm();
-    //     this.showMessage('ge-message', `${type} entry added successfully`, 'success');
-    // }
     
     async saveMoneyExchangerData() {
         try {
@@ -2071,6 +1953,7 @@ class CashBookApp {
         }
     }
 }
+
 // Initialize the app when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
     window.app = new CashBookApp();
